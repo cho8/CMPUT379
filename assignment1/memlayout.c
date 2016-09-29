@@ -96,71 +96,37 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany,
   struct memregion *curr_layout;
   get_mem_layout(curr_layout, howmany);
   
+  struct memregion curr_r;
+  struct memregion old_r;
+  
+  int start_addr;
+  int end_addr;
+  
   int diff_counter = 0;
   int c_old = 0;
   int c_curr = 0;
   
   void *oldTo, *oldFrom, *newTo, *newFrom;
   
-
-
-  while (c_old < howmany) {
- //     if (diff_counter == diffsize) {   // must return number of changes, even if bigger than diffsize
- //     return diffsize;
-      }
-      oldTo = regions[c_old).to;
-      oldFrom = regions[c_old].from;
-      newTo = curr_layout[c_new].to;
-      newFrom = curr_layout[c_new].from;
-      
-      if (oldTo==newTo && oldFrom==newFrom) {
-        if (regions[c_old].mode != curr_layout[c_curr].mode){
-          thediff[diff_counter] = curr_layout;    // If mode has changed, include new region in thediff
-          diff_counter++;
-        }
-        c_old++;
-        c_curr++;
-        continue;
-      }
-
-      // Depending on the allignment of the regions, we move to the next one
-      // in the array. If either of the from/to pointers coincide, we don't
-      // include the region in the diff
-
-      if (oldFrom == newFrom) {
-        if (oldTo < newTo){
-          thediff[diff_counter] = current_layout[c_new];
-          diff_counter++;
-          c_new++;
-          continue;
-        } else {
-          c_new++;
-          continue;
-        }
-      }
-
-      // New region starts at a different address than old region
-      if (oldTo == newTo) {
-        if (oldTo < oldFrom{
-          thediff[diff_counter] = curr_layout[c_new];
-          diff_counter++;
-        }
-        c_old++;
-        c_new++;
-        continue;
-      }
-
-      // The new region doesn't align with any previous one
-
-      thediff[diff_counter] = curr_layout[c_new];
-      diff_counter++;
-
-      if (oldTo < newTo) {        
-        c_old++;
-      } else {
-        thediff[diff_counter] = curr_layout[c_new];  //if new region took up some of old region, include in thediff
-        c_new++;
-      }
+  int i;
+  for (int i=0; i<0xffffffff ; i+=PAGE_SIZE) {
+    
+    if (i > curr_r.to) {
+      c_curr++;
+    }
+    if (i > old_r.to) {
+      c_old++;
+    }
+    curr_r = regions[c_curr];
+    old_r = regions[c_old];
+    
+    if(curr_r.mode == old_r.mode) {
+      continue;
+    }
+    
+    if (curr_r.to > old_r.to) {
+      start_addr = curr_r.to;
+    }
   }
   
   return diff_counter;
