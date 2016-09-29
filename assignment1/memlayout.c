@@ -98,38 +98,26 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
 //int get_mem_diff (struct memregion *regions, unsigned int howmany,
 //  struct memregion *thediff, unsigned int diffsize){
 //  
+//  // get a new snapshot of memory
 //  struct memregion *curr_layout;
 //  get_mem_layout(curr_layout, howmany);
 //  
-//  int diff_counter
-//  int c_old = 0;
-//  int c_curr = 0;
+//  int diff_counter=0;
+//  int curr_i = 0;    //current index in regions struct
+//  int old_i = 0;     //current index in curr_layout
 //  
-//  void *oldTo, *oldFrom, *newTo, *newFrom;
+//  struct memregion curr_region = curr_layout[curr_i];
+//  struct memrgeion old_region = regions[old_i];
 //  
-//  while (counterOld < howmany) {
-//      if (diff_count == diffsize) {
-//        return diffsize;
-//      }
-//      oldTo = regions[c_old).to;
-//      oldFrom = regions[c_old].from;
-//      newTo = regions[c_new].to;
-//      newFrom = regions[c_new].from;
-//      
-//      if (oldTo==newTo && oldFrom==newFrom) {
-//        continue;
-//      }
-//      if (oldTo < newTo && size) {
-//      } else if {
-//      } else if {
-//      } else if {
-//      } else if {
-//      }
-//    
+//  int i;
+//  for (i=0; i<0xffffffff; i+=PAGE_SIZE) {
+//    //
+//    if (curr_region.from == curr_region.from && curr_region.to == old_region.to) {
+//      continue;
+//    }
 //    
 //  }
-//  
-//  return diff_counter;
+//  return 0;
 //}
 
 
