@@ -1,11 +1,10 @@
-
 #include "memlayout.h"
 
 // EXTERNALLY DEFINED
 //extern PAGE_SIZE;
 
 // Remove this before submission!!
-const unsigned int MIN_PAGESIZE=2, MAX_PAGESIZE=65536, PAGE_SIZE=0x80; // some test page size
+//const unsigned int MIN_PAGESIZE=2, MAX_PAGESIZE=65536, PAGE_SIZE=0x80; // some test page size
 
 
 static jmp_buf env;

@@ -1,7 +1,10 @@
 #ifndef MEMLAYOUT_H  /* Include guard */
 #define MEMLAYOUT_H
 
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <setjmp.h>
 
 
 #define MEM_RW 0
@@ -17,6 +20,8 @@ struct memregion {
 int get_mem_layout (struct memregion *regions, unsigned int size);
 int get_mem_diff (struct memregion *regions, unsigned int howmany,
   struct memregion *thediff, unsigned int diffsize);
+
+extern int PAGE_SIZE;
 
 
 #endif // MEMLAYOUT_H
