@@ -103,47 +103,63 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany,
   struct memregion *curr_layout;
   get_mem_layout(curr_layout, howmany);
   
-  struct memregion curr_r;
-  struct memregion old_r;
+  struct memregion diff_region;
+  diff_region.from = 0x0;
+  diff_region.mode = -1;
   
-  int current_mode;
+  
   int diff_counter = 0;
   int c_old = 0;
   int c_curr = 0;
   
-  void *oldTo, *oldFrom, *newTo, *newFrom;
+  int old_mode;
+  int curr_mode;
+  int seen_mode;      // keeper of what mode needs to be recorded
   
   int i;
   for (int i=0; i<0xffffffff ; i+=PAGE_SIZE) {
-    
-    if (i > curr_r.to) {
+
+    // find the region that i is currently in
+    if (i > (int )curr_layout[c_curr].to) {
       c_curr++;
     }
-    if (i > old_r.to) {
+    if (i > (int )regions[c_old].to) {
       c_old++;
     }
     
+    // find the mode of the region i is in
     old_mode = regions[c_old].mode;
-    curr_region = curr_layout[c_curr];
+    curr_mode = regions[c_curr].mode;
     
-    // compare with region
-    // new region if diff mode
-    if (current_mode != curr_region.mode) {
-      
-      // save the end of the previous region and commit to struct
-      curr_region.to = (void*)(curr_addr - 0x1);
-      regions[r_count] = curr_region;
-      
-      // set beginning of new region to the current address where new mode occurs
-      curr_region.from = (void*) curr_addr;
-      curr_region.mode = current_mode;
-      r_count +=1;
+    seen_mode = curr_mode;
+    
+    // if current i mode and old i mode are the same modes
+    if  (curr_mode == old_mode) {
+      if (curr_mode == seen_mode) {
+        // and the mode is the same from before
+        continue;
+      } else { // diff_region.mode != curr_mode
+        if (seen_mode == diff_region.mode) {
+          //record the end of the diff_region
+          diff_region.to = (void*)(long)i-0x1;
+          thediff[diff_counter] = diff_region;
+          diff_counter++;
+        } else {
+          seen_mode = curr_mode;
+        }
+      }
+    } else { // curr_mode != old_mode
+      if (seen_mode != curr_mode || seen_mode != old_mode) {
+        // this we haven't seen this previously
+        // make a new diff_region
+        diff_region.mode = curr_mode;
+        seen_mode = curr_mode;
+        // set keep curr_region
+        diff_region.from = (void*)(long)i;
+      }
     }
-    // extend the "to" pointer to the addr we're on and update existing region
-    curr_region.to = curr_addr;
-    regions[r_count] = curr_region;
   }
-  
+
   return diff_counter;
 }
 
