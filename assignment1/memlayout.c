@@ -7,7 +7,7 @@
 //const unsigned int MIN_PAGESIZE=2, MAX_PAGESIZE=65536, PAGE_SIZE=0x80; // some test page size
 
 
-static jmp_buf env;
+static sigjmp_buf env;
 
 void sigseg_handler (int sig_id) {
   siglongjmp(env, 0);   // Seg_fault due to illegal read
@@ -17,19 +17,13 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
 
   printf("before vars set");
 
-  struct memregion curr_region;      // current region
-  unsigned int r_count = 0;          // region count   // start off address pointer at 0x0
+  int r_count = 0;    // region count
+
   char *curr_addr = (char *)0x0;
   char readbuf = 0;                  // buffer for reading;
   
   int old_mode = -1;
   int curr_mode = -1;
-  
-  int read = 0;
-  int write = 0;
-  
-  
-  curr_region.from = 0x0;
   
   printf("before signal set");
   // sigaction + handler
@@ -46,6 +40,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     
     printf("Curr addr: %08x", i);
     curr_addr = (void*)(long)i; // current address
+    
     
     // Determine the mode
     readbuf = (char)curr_addr[0];   // attempt reading
@@ -67,16 +62,15 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     // new region if diff mode from before
     if (curr_mode != old_mode) {
 
-      curr_region.from = (void*)(long)i;
-      curr_region.mode = curr_mode;
+      regions[r_count].from = (void*)(long)i;
+      regions[r_count].mode = curr_mode;
       
-      if (old_mode == curr_region.mode) {
+      if (old_mode == regions[r_count].mode) {
         // This is a new moded area
         if (r_count < size) {
           // Check if we can store entries
           // commit the region to array
-          curr_region.to = (void*)(long)(i-0x1);
-          regions[r_count]=curr_region;
+          regions[r_count].to = (void*)(long)(i-0x1);
         }
         r_count++;
       }
