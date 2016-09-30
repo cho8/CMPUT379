@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <signal.h>
-#include <setjmp.h>
+
 #include "memlayout.h"
 
 // EXTERNALLY DEFINED
@@ -17,6 +15,8 @@ void sigseg_handler (int sig_id) {
 }
 
 int get_mem_layout (struct memregion *regions, unsigned int size) {
+
+  printf("before vars set");
 
   struct memregion curr_region;      // current region
   unsigned int r_count = 0;          // region count   // start off address pointer at 0x0
