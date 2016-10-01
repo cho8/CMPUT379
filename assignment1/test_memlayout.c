@@ -6,41 +6,42 @@ int main() {
   printf("=== Test memlayout.c start ===\n");
 
   unsigned int size = 100;
-  unsigned int actualSize;
+  unsigned int actual_size;
   unsigned int useSize = size;
-  unsigned int actualDiffSize;
+  unsigned int actual_diffSize;
   struct memregion regions[size];
 
   printf("Test get_mem_layout\n");
-  actualSize = get_mem_layout(regions,size);
+  actual_size = get_mem_layout(regions,size);
 
 
-  if (actualSize < size) {
-	  useSize=actualSize;
+  if (actual_size < size) {
+	  useSize=actual_size;
   }
 
   int i;
   for (i=0; i< useSize; i++) {
     printf("%-10p - %-10p %d \n", regions[i].from, regions[i].to, regions[i].mode);
   }
-  printf("Actual number of regions: %d\n", actualSize);
+  printf("Actual number of regions: %d\n", actual_size);
 
   printf("=== TEST get_mem_diff ===\n");
 
   struct memregion thediff[size];
 
   int *test;
-  test = (int*)malloc(sizeof(int));	//Char pointer to change memory
-  test = (int *)realloc(test, 2 * sizeof(int));   //This is where we actually change memory space
+  test = (int*) calloc(1000, sizeof(int));
 
-  actualDiffSize = get_mem_diff(regions, size, thediff, size);
+  actual_diffSize = get_mem_diff(regions, size, thediff, size);
   useSize=size;
-  if (actualDiffSize < size) {
-	  useSize=actualDiffSize;
+  if (actual_diffSize < size) {
+	  useSize=actual_diffSize;
   }
   for (i=0; i< useSize; i++) {
     printf("%-10p - %-10p %d \n", thediff[i].from, thediff[i].to, thediff[i].mode);
   }
-  printf("Actual number of different regions: %d\n", actualDiffSize);
+  printf("Actual number of different regions: %d\n", actual_diffSize);
+
+
 
 }
