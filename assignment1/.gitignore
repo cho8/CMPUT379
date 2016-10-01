@@ -1,2 +1,7 @@
-object files
+
 *.o
+*.out
+*.out.dSYM/
+.project
+.cproject
+.DS_Store

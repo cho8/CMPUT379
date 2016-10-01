@@ -8,11 +8,11 @@
 	- take care of segfaults from get_mem_layout
 */
 
-
+int PAGE_SIZE=0x4000;
 void init_layout(struct memregion *regions, int size){
 
-//  size = get_mem_layout(regions, 1);		//causes segfault
-//  size = get_mem_layout(regions, size);
+  size = get_mem_layout(regions, 1);		//causes segfault
+  size = get_mem_layout(regions, size);
 
   printf("This is the initial layout of the program memory:\n");
 
@@ -23,27 +23,27 @@ void init_layout(struct memregion *regions, int size){
 
 }
 
-/*
-void change_layout(struct memregion *old_regions, struct memregion *diff){
+
+void change_layout(struct memregion *old_regions, int size, struct memregion *diff){
 
   unsigned int size_change = get_mem_diff(old_regions, size, diff, 1);		//get number of entries in new mem_region array
   size_change = get_mem_diff(old_regions, size, diff, size_change);	//record changes in diff
 
   printf("The program memory has been altered. These changes have occured: \n");
   int i;
-  for (i=0, i<size_change, i++) {
-    printf("$s - $s %d \n", diff[i].from, diff[i].to, diff[i].mode);
+  for (i=0; i<size_change; i++) {
+    printf("%-10p - %-10p %d \n", diff[i].from, diff[i].to, diff[i].mode);
   }
 }
-*/
+
 
 int main(){
 
 
-  int *size;	//Size of initial mem_region array
+  int size;	//Size of initial mem_region array
   int * test;
 
-  *size = 10;	// DELETE BEFORE SUBMITING
+  size = 100;	// DELETE BEFORE SUBMITING
   test = (int*)malloc(sizeof(int));	//Char pointer to change memory
 
   if(test == 0){
@@ -54,13 +54,13 @@ int main(){
   struct memregion *in_regions;
   struct memregion *diff;
 
-
-  init_layout(in_regions, *size);
+  printf("Get layout:\n");
+  init_layout(in_regions, size);
 
   //This is where we actually change memory space
   test = (int *)realloc(test, 2 * sizeof(int));
 
-//  change_layout(in_regions, diff);
+  change_layout(in_regions, diff, size);
 
 
   free(test);
