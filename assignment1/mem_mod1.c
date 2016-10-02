@@ -9,26 +9,29 @@
 */
 
 unsigned int PAGE_SIZE=0x4000;
-void init_layout(struct memregion *regions, int size){
+void init_layout(struct memregion *regions){
+  // removed paramter 'size' because not used
 
+  // called twice to get whole memory layout
+  int size = get_mem_layout(regions, 1);
+  int actual_size = get_mem_layout(regions, size);
 
-  size = get_mem_layout(regions, 1);		// why is size passed in, then reassigned immediately?
-  int actualSize = get_mem_layout(regions, size);
-
-  // in the case where the actual size is larger than the number of array entries,
-  int useSize = actualSize;
-  //if (actualSize>size) {
-	 // useSize = size;
-  //}
-
-
-  printf("This is the initial layout of the program memory:\n");
+  printf("Initial layout of program memory:\n");
 
   int i;
-  for (i=0; i<useSize; i++) {
-    printf("%d %p - %p %d \n", i, regions[i].from, regions[i].to, regions[i].mode);
+  for (i=0; i<actual_size; i++) {
+    printf("%-10p - %-10p", regions[i].from, regions[i].to);
+    switch (regions[i].mode) {
+    	case MEM_NO:
+    		printf(" %s \n", "NO");
+    		break;
+    	case MEM_RW:
+    		printf(" %s \n", "RW");
+    		break;
+    	case MEM_RO:
+    		printf(" %s \n", "RO");
+    }
   }
-  printf("Actual size: %d\n", actualSize);
 
 }
 
@@ -42,16 +45,21 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
 
   int size_change = get_mem_diff(old_regions, size_or, diff, 1);	//get number of entries in new mem_region array
   int actual_size_change = get_mem_diff(old_regions, size_or, diff, size_change);		//record changes in diff
-  int use_size = actual_size_change;
 
-  // in the case where the actual size is larger than the number of array entries,
-  if (actual_size_change>size_change) {
-	  use_size = size_change;
-  }
-  printf("The program memory has been altered. These changes have occured: \n");
+  printf("Program memory has altered. Memory regions changed: \n");
   int i;
-  for (i=0; i<use_size; i++) {
-    printf("%-10p - %-10p %d \n", diff[i].from, diff[i].to, diff[i].mode);
+  for (i=0; i<actual_size_change; i++) {
+    printf("%-10p - %-10p", diff[i].from, diff[i].to);
+    switch (diff[i].mode) {
+        	case MEM_NO:
+        		printf(" %s \n", "NO");
+        		break;
+        	case MEM_RW:
+        		printf(" %s \n", "RW");
+        		break;
+        	case MEM_RO:
+        		printf(" %s \n", "RO");
+        }
   }
   printf("Actual size change: %d", actual_size_change);
 }
@@ -59,10 +67,10 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
 
 int main(){
 
-  int size = 30;	//Size of initial mem_region array
   int * test;
-  struct memregion in_regions[30];
-  struct memregion diff[30];
+  int size = 30;
+  struct memregion in_regions[size];
+  struct memregion diff[size];
 
   test = (int*)malloc(sizeof(int));	//Int pointer to change memory
 
@@ -73,7 +81,7 @@ int main(){
 
   printf("Get layout:\n");
 
-  init_layout(in_regions, size);
+  init_layout(in_regions);
 
   printf("after init\n");
 
