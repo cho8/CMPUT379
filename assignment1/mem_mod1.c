@@ -16,8 +16,8 @@ void init_layout(struct memregion *regions, int size){
 
   printf("This is the initial layout of the program memory:\n");
 
-  int i = 0;
-  for (i; i<size; i++) {
+  int i;
+  for (i=0; i<size; i++) {
     printf("%p - %p %d \n", regions[i].from, regions[i].to, regions[i].mode);
   }
 
@@ -60,7 +60,7 @@ int main(){
   //This is where we actually change memory space
   test = (int *)realloc(test, 2 * sizeof(int));
 
-  change_layout(in_regions, diff, size);
+  change_layout(in_regions, size, diff);
 
 
   free(test);
