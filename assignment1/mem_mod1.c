@@ -8,7 +8,7 @@
 	- verify memory changes are occuring
 */
 
-unsigned int PAGE_SIZE=0x4000;
+unsigned int PAGE_SIZE=4096;
 void init_layout(struct memregion *regions){
   // removed paramter 'size' because not used
 
@@ -32,6 +32,7 @@ void init_layout(struct memregion *regions){
     		printf(" %s \n", "RO");
     }
   }
+  printf("Actual size: %d\n", actual_size);
 
 }
 
@@ -61,18 +62,18 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
         		printf(" %s \n", "RO");
         }
   }
-  printf("Actual size change: %d", actual_size_change);
+  printf("Actual size change: %d\n", actual_size_change);
 }
 
 
 int main(){
 
-  int * test;
+  unsigned int * test;
   int size = 30;
   struct memregion in_regions[size];
   struct memregion diff[size];
 
-  test = (int*)malloc(sizeof(int));	//Int pointer to change memory
+  test = (unsigned int*)malloc(sizeof(unsigned int));
 
   if(test == 0){
     printf("ERROR: Memory not allocated\n");
@@ -80,14 +81,14 @@ int main(){
   }
 
   printf("Get layout:\n");
-
   init_layout(in_regions);
 
   printf("after init\n");
 
   //This is where we actually change memory space
-  test = (int *)realloc(test, 20 * sizeof(int));
 
+
+  test = (unsigned int *)realloc(test, 2000000* sizeof(unsigned int));
 
   printf("before change\n");
   change_layout(in_regions, size, diff);

@@ -64,14 +64,14 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
 
 int main(){
 
-  int * test1;
-  int * test2;
+  unsigned int * test1;
+  unsigned int * test2;
   int size = 30;
   struct memregion in_regions[size];
   struct memregion diff[size];
 
   test1 = (int*)malloc(sizeof(int));	//Int pointer to change memory
-
+  test2 = (unsigned int*) malloc (40*sizeof(int));
   if(test1 == 0){
     printf("ERROR: Memory not allocated\n");
     return 1;
@@ -84,8 +84,8 @@ int main(){
   printf("after init\n");
 
   //This is where we actually change memory space
-  test1 = (int *)realloc(test1, 2 * sizeof(int));
-  test2 = (int *)calloc( 50, 2* sizeof(int));
+  test1 = (unsigned int *)realloc(test1, 20000 * sizeof(int));
+  test2 = (unsigned int *)calloc( 50000, 2* sizeof(int));
 
 
   printf("before change\n");
