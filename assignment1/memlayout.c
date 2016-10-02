@@ -65,20 +65,26 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
       }
     }
 
+    // base case
+    if (i==0) {
+    	old_mode=curr_mode;
+	regions[r_count].mode=curr_mode;
+    }
     
     // compare with region
     // new region if diff mode from before
     if (curr_mode != old_mode) {
-      
-      if (old_mode == regions[r_count].mode) {
+           
         // This is a new moded area
         if (r_count < size) {
           // Check if we can store entries
           // commit the region to array
           regions[r_count].to = (void*)(long)(i-0x1);
-          r_count+=1;
+          regions[r_count].mode = old_mode;
+	  r_count+=1;
           regions[r_count].from = (void*)(long)i;
-        }
+      } else {
+	r_count+=1;
       }
     // else curr==old, same region
 
