@@ -16,16 +16,12 @@ void init_layout(struct memregion *regions, int size){
   int actualSize = get_mem_layout(regions, size);
 
   // in the case where the actual size is larger than the number of array entries,
-  int useSize = actualSize;
-  if (actualSize>size) {
-	  useSize = size;
-  }
 
 
   printf("This is the initial layout of the program memory:\n");
 
   int i;
-  for (i=0; i<useSize; i++) {
+  for (i=0; i<actualSize; i++) {
     printf("%p - %p %d \n", regions[i].from, regions[i].to, regions[i].mode);
   }
   printf("Actual size: %d\n", actualSize);
