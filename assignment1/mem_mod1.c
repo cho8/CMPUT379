@@ -8,25 +8,26 @@
 	- verify memory changes are occuring
 */
 
-int PAGE_SIZE=0x4000;
+unsigned int PAGE_SIZE=0x4000;
 void init_layout(struct memregion *regions, int size){
 
 
   size = get_mem_layout(regions, 1);		// why is size passed in, then reassigned immediately?
+  printf("Actual size get %d\n", size);
   int actualSize = get_mem_layout(regions, size);
 
   // in the case where the actual size is larger than the number of array entries,
   int useSize = actualSize;
-  if (actualSize>size) {
-	  useSize = size;
-  }
+  //if (actualSize>size) {
+	 // useSize = size;
+  //}
 
 
   printf("This is the initial layout of the program memory:\n");
 
   int i;
   for (i=0; i<useSize; i++) {
-    printf("%p - %p %d \n", regions[i].from, regions[i].to, regions[i].mode);
+    printf("%d %p - %p %d \n", i, regions[i].from, regions[i].to, regions[i].mode);
   }
   printf("Actual size: %d\n", actualSize);
 

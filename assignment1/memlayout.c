@@ -34,11 +34,11 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
   
   sigaction(SIGSEGV, &act, &old_act);
   
-  regions[r_count].from = (void*)0x0;
+  regions[r_count].from = 0x0;
 
   // loop through all memory addresses
   unsigned int i;
-  for (i=PAGE_SIZE; i<0xffffffff; i+=PAGE_SIZE) {
+  for (i=0; i<0xfffffffe; i+=PAGE_SIZE) {
     
     curr_addr = (char*)(long)i; // current address
 
@@ -76,7 +76,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
           // Check if we can store entries
           // commit the region to array
           regions[r_count].to = (void*)(long)(i-0x1);
-          r_count++;
+          r_count+=1;
           regions[r_count].from = (void*)(long)i;
         }
       }
@@ -86,11 +86,11 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     old_mode = curr_mode;
 
     //sanity check
-    if (i<0xffffffff && i+PAGE_SIZE<i) {
-    	if (r_count < size) {
+    if ( (i+PAGE_SIZE)<i) {
+	if (r_count<=size) {
     		regions[r_count].to=(void*)0xffffffff;
     		regions[r_count].mode=curr_mode;
-    	}
+	}
     	break;
     }
   }

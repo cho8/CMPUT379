@@ -64,7 +64,7 @@ int main(){
   struct memregion in_regions[30];
   struct memregion diff[30];
 
-  test = (int*)calloc(sizeof(int));
+  test = (int*)calloc(50,sizeof(int));
 
   if(test == 0){
     printf("ERROR: Memory not allocated\n");
@@ -79,7 +79,7 @@ int main(){
 
   //This is where we actually change memory space
 //  test = (int *)realloc(test, 2 * sizeof(int));
-  test = (int*)calloc(sizeof(int));
+  test = (int*)calloc(50,sizeof(int));
 
 
   printf("before change\n");
