@@ -68,7 +68,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     // base case
     if (i==0) {
     	old_mode=curr_mode;
-	regions[r_count].mode=curr_mode;
+    	regions[r_count].mode=curr_mode;
     }
     
     // compare with region
@@ -81,10 +81,10 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
           // commit the region to array
           regions[r_count].to = (void*)(long)(i-0x1);
           regions[r_count].mode = old_mode;
-	  r_count+=1;
+          r_count+=1;
           regions[r_count].from = (void*)(long)i;
       } else {
-	r_count+=1;
+    	  r_count+=1;
       }
     // else curr==old, same region
 

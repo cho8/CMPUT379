@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <setjmp.h>
 #include "memlayout.h"
 
 /* TODO
@@ -15,8 +11,6 @@ void init_layout(struct memregion *regions){
   // called twice to get whole memory layout
   int size = get_mem_layout(regions, 1);
   int actual_size = get_mem_layout(regions, size);
-
-
 
   printf("This is the initial layout of the program memory:\n");
 
@@ -36,7 +30,6 @@ void init_layout(struct memregion *regions){
     		printf(" %s \n", "RO");
     }
   }
-
 }
 
 

@@ -86,7 +86,7 @@ int main(){
   printf("after init\n");
 
   //This is where we actually change memory space
-  test = (int *)realloc(test, 2 * sizeof(int));
+  test = (int *)realloc(test, 20 * sizeof(int));
 
 
   printf("before change\n");
