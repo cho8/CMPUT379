@@ -13,7 +13,6 @@ void init_layout(struct memregion *regions, int size){
 
 
   size = get_mem_layout(regions, 1);		// why is size passed in, then reassigned immediately?
-  printf("Actual size get %d\n", size);
   int actualSize = get_mem_layout(regions, size);
 
   // in the case where the actual size is larger than the number of array entries,
