@@ -33,7 +33,6 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
   for (i=0; i<0xfffffffe; i+=PAGE_SIZE) {
     
     curr_addr = (char*)(long)i; // current address
-    printf("%-10p\n", curr_addr);
 
     // Determine the mode
     jmp_var = sigsetjmp(env,1);
@@ -126,8 +125,7 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
   // scan addresses
   unsigned int i;
   for (i=0; i<0xffffffff ; i+=PAGE_SIZE) {
-    
-	curr_addr = (char*)(long)i; // current address
+    curr_addr = (char*)(long)i; // current address
 
 	// Determine the old mode at i
     if (i > (unsigned int )regions[old_i].to) {
@@ -171,8 +169,13 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
         // start a diff_region
         thediff[diff_count].from = (void*)(long)i;
         thediff[diff_count].mode = curr_mode;
-      }
-      if (last_curr_mode != curr_mode) {
+      } 
+      if (last_curr_mode == curr_mode) {
+      	thediff[diff_count].to=(void*)(long)i;
+      } else if (last_old_mode == last_curr_mode) {
+      	thediff[diff_count].from = (void*)(long)i;
+      	thediff[diff_count].mode = curr_mode;
+      } else if (last_curr_mode != curr_mode) {
         // suddenly a very different region
         thediff[diff_count].to =(void*)(long)(i-0x1);
         diff_count++;

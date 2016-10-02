@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <setjmp.h>
 #include "memlayout.h"
-
 
 unsigned int PAGE_SIZE=4096;
 void init_layout(struct memregion *regions){

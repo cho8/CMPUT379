@@ -1,6 +1,5 @@
 #include "memlayout.h"
 
-
 unsigned int PAGE_SIZE=0x64;
 void init_layout(struct memregion *regions){
   // removed paramter 'size' because not used

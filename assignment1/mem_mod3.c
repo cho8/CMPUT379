@@ -5,21 +5,13 @@
 #include "memlayout.h"
 
 /* TODO
-	- take care of segfaults from get_mem_layout
+	- operations change RW permissions but change size (they should be constant)
 */
 
 #define RWtoRO "RW_RO_file"
 #define ROtoNO "RO_NO_file"
 
-unsigned int PAGE_SIZE=0x64;
-
-void begin_file_ops(FILE * file1, FILE * file2){
-  file1 = fopen(RWtoRO, "w"); 
-  file2 = fopen(ROtoNO, "w");
-
-  fclose(file2);
-  file2 = fopen(ROtoNO, "r");
-}
+unsigned int PAGE_SIZE=0x100;
 
 void do_file_ops(FILE * file1, FILE * file2){	//closes files which were previously opened, then reopens them in a new mode
   printf("inside do_file_ops\n");
@@ -44,7 +36,6 @@ void init_layout(struct memregion *regions){
   int size = get_mem_layout(regions, 1);
   int actual_size = get_mem_layout(regions, size);
 
-  printf("This is the initial layout of the program memory:\n");
 
   printf("Initial layout of program memory:\n");
 
@@ -62,6 +53,7 @@ void init_layout(struct memregion *regions){
     		printf(" %s \n", "RO");
     }
   }
+  printf("Actual size: %d\n", actual_size);
 }
 
 
@@ -87,46 +79,35 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
         		printf(" %s \n", "RO");
         }
   }
-  printf("Actual size change: %d", actual_size_change);
+  printf("Actual size change: %d\n", actual_size_change);
 }
 
 
 int main(){
 
-  FILE * file1;
-  FILE * file2;
-  int size = 30;	//Size of initial mem_region array
-  struct memregion in_regions[size];
-  struct memregion diff[size];
-
-  printf("before begin_file_ops\n");
-  begin_file_ops(file1, file2);
-  printf("after begin_file_ops\n");
-
-  init_layout(in_regions);
-  printf("after init_layout\n");
-
-  if(file1 != NULL){
-    printf("before closing file1 (which is not null)\n");
-    fclose(file1);
-    printf("before do_file_ops\n");
-  } else {
-    printf("file1 is null in main\n");
-  }
-
-  printf("before do_file_ops \n");
-  do_file_ops(file1, file2);
-  printf("after do_file_ops\n");
-
-  change_layout(in_regions, size, diff);
-  printf("after change_layout\n");
-
-
-
-  if(fclose(file1) != 0 || fclose(file2) != 0){
-    printf("ERROR: file was not properly closed\n");
-    return 1;
-  }
-
+  
+    FILE * file1;
+      FILE * file2;
+        int size = 30;	//Size of initial mem_region array
+          struct memregion in_regions[size];
+            struct memregion diff[size];
+            
+              file1 = fopen(RWtoRO, "w");
+                file2 = fopen(ROtoNO, "w");
+                
+                  fclose(file2);
+                    file2 = fopen(ROtoNO, "r");
+                    
+                      init_layout(in_regions);
+                      
+                        fclose(file1);
+                        
+                          fclose(file2);
+                          
+                            file1 = fopen(RWtoRO, "r");
+                              fclose(file1);
+                              
+                                change_layout(in_regions, size, diff);
   return 0;
 }
+
