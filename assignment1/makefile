@@ -1,5 +1,5 @@
-all :
+out :
 	gcc test_memlayout.c memlayout.c 
 	
-mod1 :
+all :
 	gcc mem_mod1.c memlayout.c

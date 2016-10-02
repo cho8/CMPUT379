@@ -23,19 +23,21 @@ void init_layout(struct memregion *regions, int size){
 
 }
 
-/*
+
 void change_layout(struct memregion *old_regions, struct memregion *diff){
 
-  unsigned int size_change = get_mem_diff(old_regions, size, diff, 1);		//get number of entries in new mem_region array
-  size_change = get_mem_diff(old_regions, size, diff, size_change);	//record changes in diff
+  unsigned int size_change = 10;
+
+//  unsigned int size_change = get_mem_diff(old_regions, size, diff, 1);		//get number of entries in new mem_region array
+//  size_change = get_mem_diff(old_regions, size, diff, size_change);	//record changes in diff
 
   printf("The program memory has been altered. These changes have occured: \n");
   int i;
-  for (i=0, i<size_change, i++) {
-    printf("$s - $s %d \n", diff[i].from, diff[i].to, diff[i].mode);
+  for (i=0; i<size_change; i++) {
+    printf("%p - %p %d \n", diff[i].from, diff[i].to, diff[i].mode);
   }
 }
-*/
+
 
 int main(){
 
@@ -65,7 +67,7 @@ int main(){
     return 1;
   }
 
-//  change_layout(in_regions, diff);
+  change_layout(in_regions, diff);
 
   free(size);
   free(test1);

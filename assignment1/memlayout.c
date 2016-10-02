@@ -86,7 +86,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     old_mode = curr_mode;
 
     //sanity check
-    if (i+PAGE_SIZE<i) {
+    if (i<0xffffffff && i+PAGE_SIZE<i) {
     	if (r_count < size) {
     		regions[r_count].to=(void*)0xffffffff;
     		regions[r_count].mode=curr_mode;
@@ -140,7 +140,7 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
       c_old++;
     }
     
-    printf("current region: %-10p - %-10p       address %#x\n", regions[c_old].from, regions[c_old].to, i);
+//    printf("current region: %-10p - %-10p       address %#x\n", regions[c_old].from, regions[c_old].to, i);
 
     // Determine the current mode
     old_mode = regions[c_old].mode;
@@ -148,28 +148,28 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
 
     if (jmp_var==0) {
       // attempt reading
-      printf("Attempting reading\n");
+//      printf("Attempting reading\n");
       curr_mode=MEM_RO;
       readbuf = *curr_addr;   // attempt reading
 
       // attempt writing
       curr_mode=MEM_RW;
-      printf("Read success... Attempting Writing\n");
+//      printf("Read success... Attempting Writing\n");
       *curr_addr = readbuf;
-      printf("====RW\n");
+//      printf("====RW\n");
 
     } else {
       if (curr_mode == MEM_RO) {
     	// Reading failed
     	curr_mode = MEM_NO;
-    	printf("====NO\n");
+//    	printf("====NO\n");
       } else if (curr_mode == MEM_RW) {
     	// Reading failed (and cannot not read)
         curr_mode=MEM_RO;
-        printf("====RO\n");
+//        printf("====RO\n");
       }
     }
-    printf("old_mode %d curr_mode %d\n", old_mode, curr_mode);
+//    printf("old_mode %d curr_mode %d\n", old_mode, curr_mode);
 
 
     // if current i mode and old i mode are the same modes
@@ -200,7 +200,7 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
     last_old_mode=old_mode;
 
     //sanity check
-    if (i+PAGE_SIZE<i) {
+    if (i<0xffffffff && i+PAGE_SIZE<i) {
       break;
     }
   }
