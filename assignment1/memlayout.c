@@ -3,25 +3,21 @@
 // EXTERNALLY DEFINED
 //extern PAGE_SIZE;
 
-// Remove this before submission!!
-//const unsigned int MIN_PAGESIZE=2, MAX_PAGESIZE=65536, PAGE_SIZE=0x80; // some test page size
 
 
 sigjmp_buf env;
 
 void sigseg_handler (int sig_id) {
-//  printf("===SEGFAULT!\n");
   siglongjmp(env, 1);   // Seg_fault due to illegal op
 }
 
 int get_mem_layout (struct memregion *regions, unsigned int size) {
 
-
   int r_count = 0;    // region count
-  int jmp_var=0;
+  int jmp_var = 0;
 
-  char* curr_addr;
-  char readbuf = 0;                  // buffer for reading;
+  char* curr_addr;	  // address for read/write ops
+  char readbuf = 0;   // buffer to read from address
   
   int old_mode = -1;
   int curr_mode = -1;
@@ -34,8 +30,6 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
   
   sigaction(SIGSEGV, &act, &old_act);
   
-  regions[r_count].from = 0x0;
-
   // loop through all memory addresses
   unsigned int i;
   for (i=0; i<0xfffffffe; i+=PAGE_SIZE) {
@@ -47,21 +41,18 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     if (jmp_var==0) {
       // attempt reading
       curr_mode=MEM_RO;
-      readbuf = *curr_addr;   // attempt reading
+      readbuf = *curr_addr;
 
       // attempt writing
       curr_mode=MEM_RW;
       *curr_addr = readbuf;
 
     } else {
-      // something blew up
+      // program segfault
       if (curr_mode == MEM_RO) {
-    	// failed to write
-
-    	curr_mode = MEM_NO;
+    	curr_mode = MEM_NO;		// tried to read but failed
       } else if (curr_mode == MEM_RW) {
-    	// failed to write after read
-        curr_mode=MEM_RO;
+        curr_mode=MEM_RO;		// failed to write after read but failed
       }
     }
 
@@ -69,21 +60,22 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     if (i==0) {
     	old_mode=curr_mode;
     	regions[r_count].mode=curr_mode;
+    	regions[r_count].from = (void*)(long) 0;;
     }
     
-    // compare with region
-    // new region if diff mode from before
+    // compare modes
     if (curr_mode != old_mode) {
            
-        // This is a new moded area
+        // This is a new mode area
         if (r_count < size) {
-          // Check if we can store entries
-          // commit the region to array
+          // Check if we can store entries and commit to regions
           regions[r_count].to = (void*)(long)(i-0x1);
           regions[r_count].mode = old_mode;
+          // start a "new" region
           r_count+=1;
           regions[r_count].from = (void*)(long)i;
       } else {
+    	  // can't store anymore
     	  r_count+=1;
       }
     // else curr==old, same region
@@ -91,21 +83,20 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
     }
     old_mode = curr_mode;
 
-    //sanity check
+    //sanity check for iterating over last address
     if ( (i+PAGE_SIZE)<i) {
-	if (r_count<=size) {
+    	if (r_count<=size) {
     		regions[r_count].to=(void*)0xffffffff;
     		regions[r_count].mode=curr_mode;
-	}
+    	}
     	break;
     }
   }
   
-  // reset sigaction to previous
+  // reset previous sigaction
   sigaction(SIGSEGV, &old_act, 0);
-  
-  
-  return r_count+1; //return index+1
+
+  return r_count+1; //return actual number of regions
 }
 
 
@@ -114,10 +105,8 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
   // This function takes the 'old' memregion, the current 'new' region and
   // returns what you would have to put on top of 'old' to get 'new'
 
-
-  int diff_count = 0;
-  int c_old = 0;
-  int c_curr = 0;
+  int diff_count = 0;		// thediff index
+  int old_i = 0;			// regions index
   
   int last_old_mode = -1;
   int last_curr_mode = -1;
@@ -125,7 +114,7 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
   
   int jmp_var = 0;
   char readbuf = 0;
-  char* curr_addr = (char*)0x0;
+  char* curr_addr;
 
   // sigaction + handler
   struct sigaction act, old_act;
@@ -135,50 +124,40 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
 
   sigaction(SIGSEGV, &act, &old_act);
 
-
+  // scan addresses
   unsigned int i;
   for (i=0; i<0xffffffff ; i+=PAGE_SIZE) {
     
 	curr_addr = (char*)(long)i; // current address
 
-	 // find the region that i is currently in
-    if (i > (unsigned int )regions[c_old].to) {
-      c_old++;
+	// Determine the old mode at i
+    if (i > (unsigned int )regions[old_i].to) {
+      old_i++;
     }
     
-//    printf("current region: %-10p - %-10p       address %#x\n", regions[c_old].from, regions[c_old].to, i);
-
-    // Determine the current mode
-    old_mode = regions[c_old].mode;
+    // Determine the current mode at i
+    old_mode = regions[old_i].mode;
     jmp_var = sigsetjmp(env,1);
 
     if (jmp_var==0) {
       // attempt reading
-//      printf("Attempting reading\n");
       curr_mode=MEM_RO;
       readbuf = *curr_addr;   // attempt reading
 
       // attempt writing
       curr_mode=MEM_RW;
-//      printf("Read success... Attempting Writing\n");
-      *curr_addr = readbuf;
-//      printf("====RW\n");
+      *curr_addr = readbuf;;
 
     } else {
       if (curr_mode == MEM_RO) {
-    	// Reading failed
-    	curr_mode = MEM_NO;
-//    	printf("====NO\n");
+    	curr_mode = MEM_NO;		// Reading failed
       } else if (curr_mode == MEM_RW) {
-    	// Reading failed (and cannot not read)
-        curr_mode=MEM_RO;
-//        printf("====RO\n");
+        curr_mode=MEM_RO;		// Writing failed (and cannot not read)
       }
     }
-//    printf("old_mode %d curr_mode %d\n", old_mode, curr_mode);
 
 
-    // if current i mode and old i mode are the same modes
+    // if current i mode and old i mode are the same
     if (curr_mode == old_mode) {
       if (last_old_mode != last_curr_mode){
         // regions now the same mode, but were previously different,
@@ -194,11 +173,12 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
         thediff[diff_count].from = (void*)(long)i;
         thediff[diff_count].mode = curr_mode;
       }
-      if (last_curr_mode == curr_mode) {
-        // still in the same diff_region
-        // update to pointer
-        // might be redundant here
+      if (last_curr_mode != curr_mode) {
+        // suddenly a very different region
         thediff[diff_count].to =(void*)(long)(i-0x1);
+        diff_count++;
+        thediff[diff_count].from=(void*)(long)i;
+        thediff[diff_count].mode=curr_mode;
       }
     }
     // update last modes
@@ -206,7 +186,7 @@ int get_mem_diff (struct memregion *regions, unsigned int howmany, struct memreg
     last_old_mode=old_mode;
 
     //sanity check
-    if (i<0xffffffff && i+PAGE_SIZE<i) {
+    if ((i+PAGE_SIZE)<i) {
       break;
     }
   }

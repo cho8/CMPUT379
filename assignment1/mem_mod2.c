@@ -39,7 +39,6 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
 
   printf("Inside change_layout\n");
 
-
   int size_change = get_mem_diff(old_regions, size_or, diff, 1);	//get number of entries in new mem_region array
   int actual_size_change = get_mem_diff(old_regions, size_or, diff, size_change);		//record changes in diff
 
@@ -70,7 +69,7 @@ int main(){
   struct memregion in_regions[size];
   struct memregion diff[size];
 
-  test1 = (int*)malloc(sizeof(int));	//Int pointer to change memory
+  test1 = (unsigned int*)malloc(sizeof(int));	//Int pointer to change memory
   test2 = (unsigned int*) malloc (40*sizeof(int));
   if(test1 == 0){
     printf("ERROR: Memory not allocated\n");

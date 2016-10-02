@@ -4,13 +4,10 @@
 #include <setjmp.h>
 #include "memlayout.h"
 
-/* TODO
-	- verify memory changes are occuring
-*/
 
 unsigned int PAGE_SIZE=4096;
 void init_layout(struct memregion *regions){
-  // removed paramter 'size' because not used
+  // removed parameter 'size' because not used
 
   // called twice to get whole memory layout
   int size = get_mem_layout(regions, 1);
@@ -40,8 +37,6 @@ void init_layout(struct memregion *regions){
 
 
 void change_layout(struct memregion *old_regions, int size_or, struct memregion *diff){
-
-  printf("Inside change_layout\n");
 
 
   int size_change = get_mem_diff(old_regions, size_or, diff, 1);	//get number of entries in new mem_region array
@@ -83,14 +78,12 @@ int main(){
   printf("Get layout:\n");
   init_layout(in_regions);
 
-  printf("after init\n");
 
   //This is where we actually change memory space
 
 
   test = (unsigned int *)realloc(test, 2000000* sizeof(unsigned int));
 
-  printf("before change\n");
   change_layout(in_regions, size, diff);
 
   free(test);
