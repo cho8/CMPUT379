@@ -1,10 +1,7 @@
 #include "memlayout.h"
 
-/* TODO
-	- verify memory changes are occuring
-*/
 
-unsigned int PAGE_SIZE=0x4000;
+unsigned int PAGE_SIZE=0x64;
 void init_layout(struct memregion *regions){
   // removed paramter 'size' because not used
 
@@ -37,12 +34,10 @@ void init_layout(struct memregion *regions){
 
 void change_layout(struct memregion *old_regions, int size_or, struct memregion *diff){
 
-  printf("Inside change_layout\n");
-
   int size_change = get_mem_diff(old_regions, size_or, diff, 1);	//get number of entries in new mem_region array
   int actual_size_change = get_mem_diff(old_regions, size_or, diff, size_change);		//record changes in diff
 
-  printf("Program memory has altered. Memory regions changed: \n");
+  printf("Memory regions changed: \n");
   int i;
   for (i=0; i<actual_size_change; i++) {
     printf("%-10p - %-10p", diff[i].from, diff[i].to);
@@ -80,14 +75,10 @@ int main(){
 
   init_layout(in_regions);
 
-  printf("after init\n");
-
   //This is where we actually change memory space
   test1 = (unsigned int *)realloc(test1, 20000 * sizeof(int));
   test2 = (unsigned int *)calloc( 50000, 2* sizeof(int));
 
-
-  printf("before change\n");
   change_layout(in_regions, size, diff);
 
   free(test1);

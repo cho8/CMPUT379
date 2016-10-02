@@ -1,4 +1,5 @@
-all : mod1 mod2 #mod3
+all : 
+	gcc mem_mod3.c memlayout.c
 	
 test :
 	gcc test_memlayout.c memlayout.c -o test

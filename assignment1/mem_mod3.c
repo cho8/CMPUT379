@@ -11,7 +11,7 @@
 #define RWtoRO "RW_RO_file"
 #define ROtoNO "RO_NO_file"
 
-unsigned int PAGE_SIZE=0x4000;
+unsigned int PAGE_SIZE=0x64;
 
 void begin_file_ops(FILE * file1, FILE * file2){
   file1 = fopen(RWtoRO, "w"); 
@@ -65,15 +65,14 @@ void init_layout(struct memregion *regions){
 }
 
 
+
+
 void change_layout(struct memregion *old_regions, int size_or, struct memregion *diff){
-
-  printf("Inside change_layout\n");
-
 
   int size_change = get_mem_diff(old_regions, size_or, diff, 1);	//get number of entries in new mem_region array
   int actual_size_change = get_mem_diff(old_regions, size_or, diff, size_change);		//record changes in diff
 
-  printf("Program memory has altered. Memory regions changed: \n");
+  printf("Memory regions changed: \n");
   int i;
   for (i=0; i<actual_size_change; i++) {
     printf("%-10p - %-10p", diff[i].from, diff[i].to);
@@ -96,17 +95,15 @@ int main(){
 
   FILE * file1;
   FILE * file2;
-  int *size = (int *)malloc(sizeof(int));	//Size of initial mem_region array
-  struct memregion *in_regions;
-  struct memregion *diff;
-
-  *size = 10;	// DELETE BEFORE SUBMITING
+  int size = 30;	//Size of initial mem_region array
+  struct memregion in_regions[size];
+  struct memregion diff[size];
 
   printf("before begin_file_ops\n");
   begin_file_ops(file1, file2);
   printf("after begin_file_ops\n");
 
-  init_layout(in_regions, *size);
+  init_layout(in_regions);
   printf("after init_layout\n");
 
   if(file1 != NULL){
@@ -121,7 +118,7 @@ int main(){
   do_file_ops(file1, file2);
   printf("after do_file_ops\n");
 
-  change_layout(in_regions, diff);
+  change_layout(in_regions, size, diff);
   printf("after change_layout\n");
 
 
@@ -130,8 +127,6 @@ int main(){
     printf("ERROR: file was not properly closed\n");
     return 1;
   }
-
-  free(size);
 
   return 0;
 }

@@ -3,8 +3,6 @@
 // EXTERNALLY DEFINED
 //extern PAGE_SIZE;
 
-
-
 sigjmp_buf env;
 
 void sigseg_handler (int sig_id) {
@@ -35,6 +33,7 @@ int get_mem_layout (struct memregion *regions, unsigned int size) {
   for (i=0; i<0xfffffffe; i+=PAGE_SIZE) {
     
     curr_addr = (char*)(long)i; // current address
+    printf("%-10p\n", curr_addr);
 
     // Determine the mode
     jmp_var = sigsetjmp(env,1);
