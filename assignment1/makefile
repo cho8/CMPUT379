@@ -15,4 +15,4 @@ mod2 :
 mod3 :
 	$(CC) $(MOD3) -o mod3 $(CFLAGS)
 clean :
-	rm -rf *.o mem_mod3 mem_mod2 mem_mod1 test
+	rm -rf *.o mod3 mod2 mod1 test

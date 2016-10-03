@@ -1,34 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <setjmp.h>
 #include "memlayout.h"
-
+#include <sys/mman.h>
 /* TODO
 	- operations change RW permissions but change size (they should be constant)
 */
 
-#define RWtoRO "RW_RO_file"
-#define ROtoNO "RO_NO_file"
-
 unsigned int PAGE_SIZE=0x100;
-
-void do_file_ops(FILE * file1, FILE * file2){	//closes files which were previously opened, then reopens them in a new mode
-  printf("inside do_file_ops\n");
-
-  if(file1 != NULL){
-    printf("file1 actually points somewhere \n");
-  }
-
-//  fclose(file1);
-  
-  printf("file1 has been closed\n");
-
-  fclose(file2);
-
-  file1 = fopen(RWtoRO, "r");	// file2 should have NO access
-}
-
 void init_layout(struct memregion *regions){
   // removed paramter 'size' because not used
 
@@ -84,30 +60,24 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
 
 
 int main(){
+  int *buffer;
+  int size = 100;
+  struct memregion in_regions[size];
+  struct memregion diff[size];
 
-  
-    FILE * file1;
-      FILE * file2;
-        int size = 30;	//Size of initial mem_region array
-          struct memregion in_regions[size];
-            struct memregion diff[size];
-            
-              file1 = fopen(RWtoRO, "w");
-                file2 = fopen(ROtoNO, "w");
-                
-                  fclose(file2);
-                    file2 = fopen(ROtoNO, "r");
-                    
-                      init_layout(in_regions);
-                      
-                        fclose(file1);
-                        
-                          fclose(file2);
-                          
-                            file1 = fopen(RWtoRO, "r");
-                              fclose(file1);
-                              
-                                change_layout(in_regions, size, diff);
+    
+  /* Allocate a buffer aligned on a page boundary;
+                initial protection is PROT_READ | PROT_WRITE */
+  printf("Allocating buffer aligned on page boundary\n");                
+  init_layout(in_regions);
+  buffer = (int*)memalign( PAGE_SIZE, 4 * PAGE_SIZE);
+
+  init_layout(in_regions);
+  /*
+  printf("mprotect\n");  
+  mprotect(buffer, 4*PAGE_SIZE, PROT_READ);
+  change_layout(in_regions, size, diff);
+  */
   return 0;
 }
 
