@@ -1,8 +1,10 @@
 #include "memlayout.h"
 
+// should be done
+// allocates memory space on the heap
+
 unsigned int PAGE_SIZE=4096;
 void init_layout(struct memregion *regions){
-  // removed parameter 'size' because not used
 
   // called twice to get whole memory layout
   int size = get_mem_layout(regions, 1);
@@ -27,9 +29,6 @@ void init_layout(struct memregion *regions){
   printf("Actual size: %d\n", actual_size);
 
 }
-
-
-
 
 void change_layout(struct memregion *old_regions, int size_or, struct memregion *diff){
 
@@ -68,10 +67,9 @@ int main(){
   init_layout(in_regions);	
   
   test = realloc(test, 200000*sizeof(int));
-  free(test);
-  change_layout(in_regions, size, diff);
-  //free(struct1);
 
+  change_layout(in_regions, size, diff);
+  free(test);
   
   return 0;
 }

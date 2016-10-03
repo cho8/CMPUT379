@@ -1,9 +1,11 @@
 #include "memlayout.h"
 #include <string.h>
 
+// Should be done
+// Modifies stack space by inflating one region through malloc
+
 unsigned int PAGE_SIZE=0x1000;
 void init_layout(struct memregion *regions){
-  // removed paramter 'size' because not used
 
   // called twice to get whole memory layout
   int size = get_mem_layout(regions, 1);
@@ -55,8 +57,8 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
   printf("Actual size change: %d", actual_size_change);
 }
 
-void inflateStack() {
-  int size=100;
+void inflate_stack_and_get_diff() {
+  int size=10000;
   struct memregion testregions[size];
   struct memregion diff[size];
   struct memregion othertest[size];
@@ -66,31 +68,18 @@ void inflateStack() {
 
 int main(){
 
-  unsigned int * test1;
-  //unsigned int * test2;
   int size = 30;
   struct memregion in_regions[size];
   struct memregion diff[size];
 
-  //test1 = (unsigned int*)malloc(sizeof(int));	//Int pointer to change memory
-  //test2 = (unsigned int*) malloc (40*sizeof(int));
-  if(test1 == 0){
-    printf("ERROR: Memory not allocated\n");
-    return 1;
-  }
 
   printf("Get layout:\n");
 
   init_layout(in_regions);
 
-  //This is where we actually change memory space
-  //test1 = (unsigned int *)realloc(test1, 20000 * sizeof(int));
-  int i;
+  inflate_stack_and_get_diff();
   
-  change_layout(in_regions, size, diff);
 
-  //free(test1);
-//  free(test2);
 
   return 0;
 }
