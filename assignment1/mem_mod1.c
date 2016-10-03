@@ -55,33 +55,23 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
   printf("Actual size change: %d\n", actual_size_change);
 }
 
-
 int main(){
-
-  unsigned int * test;
+  int *test;
   int size = 30;
   struct memregion in_regions[size];
   struct memregion diff[size];
 
-  test = (unsigned int*)malloc(sizeof(unsigned int));
 
-  if(test == 0){
-    printf("ERROR: Memory not allocated\n");
-    return 1;
-  }
-
+  //struct myStruct *struct1;
   printf("Get layout:\n");
-  init_layout(in_regions);
-
-
-  //This is where we actually change memory space
-
-
-  test = (unsigned int *)realloc(test, 2000000* sizeof(unsigned int));
-
-  change_layout(in_regions, size, diff);
-
+  test = malloc(1000*sizeof(int));	
+  init_layout(in_regions);	
+  
+  test = realloc(test, 200000*sizeof(int));
   free(test);
+  change_layout(in_regions, size, diff);
+  //free(struct1);
 
+  
   return 0;
 }

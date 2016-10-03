@@ -55,16 +55,24 @@ void change_layout(struct memregion *old_regions, int size_or, struct memregion 
   printf("Actual size change: %d", actual_size_change);
 }
 
+void inflateStack() {
+  int size=100;
+  struct memregion testregions[size];
+  struct memregion diff[size];
+  struct memregion othertest[size];
+  
+  change_layout(testregions, size, diff);
+}
 
 int main(){
 
   unsigned int * test1;
-  unsigned int * test2;
+  //unsigned int * test2;
   int size = 30;
   struct memregion in_regions[size];
   struct memregion diff[size];
 
-  test1 = (unsigned int*)malloc(sizeof(int));	//Int pointer to change memory
+  //test1 = (unsigned int*)malloc(sizeof(int));	//Int pointer to change memory
   //test2 = (unsigned int*) malloc (40*sizeof(int));
   if(test1 == 0){
     printf("ERROR: Memory not allocated\n");
@@ -81,7 +89,7 @@ int main(){
   
   change_layout(in_regions, size, diff);
 
-  free(test1);
+  //free(test1);
 //  free(test2);
 
   return 0;

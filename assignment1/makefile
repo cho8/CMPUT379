@@ -9,10 +9,10 @@ all: mod1 mod2 mod3
 test :
 	$(CC) test_memlayout.c memlayout.c -o test $(CFLAGS)
 mod1 :
-	$(CC) $(MOD1) -o mem_mod1 $(CFLAGS)
+	$(CC) $(MOD1) -o mod1 $(CFLAGS)
 mod2 : 
-	$(CC) $(MOD2) -o mem_mod2 $(CFLAGS)
+	$(CC) $(MOD2) -o mod2 $(CFLAGS)
 mod3 :
-	$(CC) $(MOD3) -o mem_mod3 $(CFLAGS)
+	$(CC) $(MOD3) -o mod3 $(CFLAGS)
 clean :
 	rm -rf *.o mem_mod3 mem_mod2 mem_mod1 test
