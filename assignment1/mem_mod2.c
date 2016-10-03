@@ -1,6 +1,7 @@
 #include "memlayout.h"
+#include <string.h>
 
-unsigned int PAGE_SIZE=0x64;
+unsigned int PAGE_SIZE=0x1000;
 void init_layout(struct memregion *regions){
   // removed paramter 'size' because not used
 
@@ -64,7 +65,7 @@ int main(){
   struct memregion diff[size];
 
   test1 = (unsigned int*)malloc(sizeof(int));	//Int pointer to change memory
-  test2 = (unsigned int*) malloc (40*sizeof(int));
+  //test2 = (unsigned int*) malloc (40*sizeof(int));
   if(test1 == 0){
     printf("ERROR: Memory not allocated\n");
     return 1;
@@ -75,13 +76,13 @@ int main(){
   init_layout(in_regions);
 
   //This is where we actually change memory space
-  test1 = (unsigned int *)realloc(test1, 20000 * sizeof(int));
-  test2 = (unsigned int *)calloc( 50000, 2* sizeof(int));
-
+  //test1 = (unsigned int *)realloc(test1, 20000 * sizeof(int));
+  int i;
+  
   change_layout(in_regions, size, diff);
 
   free(test1);
-  free(test2);
+//  free(test2);
 
   return 0;
 }

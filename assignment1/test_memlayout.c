@@ -1,6 +1,6 @@
 #include "memlayout.h"
 
-int PAGE_SIZE = 0x2000;
+unsigned int PAGE_SIZE = 0x1000;
 
 int main() {
   printf("=== Test memlayout.c start ===\n");
