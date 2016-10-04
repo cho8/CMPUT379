@@ -1,6 +1,8 @@
 # CMPUT379
 Fall 2016
 Assignment 1
+Christina Ho
+Cristian Dumitrescu
 
 mem_mod1
   The regions printed out in mem_mod1 belong to the heap space. The operation performed to change stack space. sbrk() alters the termination location of a process data. In our instance, the process data end location is issued two page sizes later. The stack space is RW as it is allocated for variables
