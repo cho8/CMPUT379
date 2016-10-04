@@ -50,6 +50,7 @@ int main(){
 		}
 	}
 	printf("Number of changed regions: %d\n", actual_size_change);
-	
+	free(test);
+
 	return 0;
 }

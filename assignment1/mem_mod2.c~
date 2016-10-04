@@ -8,9 +8,9 @@ unsigned int PAGE_SIZE=0x100;
 
 void inflate_stack_and_get_diff(struct memregion *regions) {
   int size=100;
-  struct memregion testregions[100000];
+  struct memregion testregions[size];
   struct memregion diff[size];
-  struct memregion othertest[200000];
+  struct memregion othertest[size];
   
   int actual_size_change = get_mem_diff(regions, size, diff,size);		//record changes in diff
 

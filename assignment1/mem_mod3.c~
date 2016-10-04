@@ -1,16 +1,23 @@
 #include "memlayout.h"
-
-// should be done
-// allocates memory space on the heap
+#include <sys/mman.h>
+/* TODO
+	- operations change RW permissions but change size (they should be constant)
+ */
 
 unsigned int PAGE_SIZE=0x100;
 
-
 int main(){
-	int size = 30;
+	int *buffer;
+	int size = 100;
+	int actual_size_change;
 	struct memregion in_regions[size];
 	struct memregion diff[size];
 
+
+	/* Allocate a buffer aligned on a page boundary;
+                initial protection is PROT_READ | PROT_WRITE */
+	printf("Allocating buffer\n");
+	buffer = (int*) malloc (0x1000);
 	int actual_size = get_mem_layout(in_regions, size);
 
 	printf("Initial layout of program memory:\n");
@@ -30,9 +37,9 @@ int main(){
 		}
 	}
 	printf("Number of memory regions: %d\n", actual_size);
-	sbrk(PAGE_SIZE);
-
-	int actual_size_change = get_mem_diff(in_regions, actual_size, diff, size);		//record changes in diff
+	
+	// mprotect(buffer, 0x1000, PROT_NONE);
+	actual_size_change = get_mem_diff(in_regions, actual_size, diff,size);		//record changes in diff
 
 	printf("Program memory has altered. Memory regions changed: \n");
 	int j;
@@ -50,6 +57,7 @@ int main(){
 		}
 	}
 	printf("Number of changed regions: %d\n", actual_size_change);
-	
+
 	return 0;
 }
+
