@@ -12,17 +12,15 @@ int main(){
 	int actual_size_change;
 	struct memregion in_regions[size];
 	struct memregion diff[size];
-
+        int i;
 
 	/* Allocate a buffer aligned on a page boundary;
                 initial protection is PROT_READ | PROT_WRITE */
 	printf("Allocating buffer\n");
-	buffer = (int*) malloc (0x1000);
+	buffer = (int*) calloc (1000, sizeof(int));
 	int actual_size = get_mem_layout(in_regions, size);
 
 	printf("Initial layout of program memory:\n");
-
-	int i;
 	for (i=0; i<actual_size; i++) {
 		printf("%-10p - %-10p", in_regions[i].from, in_regions[i].to);
 		switch (in_regions[i].mode) {
@@ -38,7 +36,7 @@ int main(){
 	}
 	printf("Number of memory regions: %d\n", actual_size);
 	
-	// mprotect(buffer, 0x1000, PROT_NONE);
+	// mprotect(buffer, 1000*sizeof(int), PROT_NONE);
 	actual_size_change = get_mem_diff(in_regions, actual_size, diff,size);		//record changes in diff
 
 	printf("Program memory has altered. Memory regions changed: \n");

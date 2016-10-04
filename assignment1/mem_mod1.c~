@@ -10,12 +10,13 @@ int main(){
 	int size = 30;
 	struct memregion in_regions[size];
 	struct memregion diff[size];
-
-	int actual_size = get_mem_layout(in_regions, size);
+	int actual_size;
+	int actual_size_change;
+	int i;
+	actual_size = get_mem_layout(in_regions, size);
 
 	printf("Initial layout of program memory:\n");
 
-	int i;
 	for (i=0; i<actual_size; i++) {
 		printf("%-10p - %-10p", in_regions[i].from, in_regions[i].to);
 		switch (in_regions[i].mode) {
@@ -30,9 +31,9 @@ int main(){
 		}
 	}
 	printf("Number of memory regions: %d\n", actual_size);
-	sbrk(PAGE_SIZE);
+	sbrk(2*PAGE_SIZE);
 
-	int actual_size_change = get_mem_diff(in_regions, actual_size, diff, size);		//record changes in diff
+	actual_size_change = get_mem_diff(in_regions, actual_size, diff, size);		//record changes in diff
 
 	printf("Program memory has altered. Memory regions changed: \n");
 	int j;
@@ -50,7 +51,6 @@ int main(){
 		}
 	}
 	printf("Number of changed regions: %d\n", actual_size_change);
-	free(test);
-
+	
 	return 0;
 }
