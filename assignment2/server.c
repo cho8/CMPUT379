@@ -3,6 +3,7 @@
     - from commandline: server379 portnumber
     - make daemon
     - handshake (receive connection -> send hex -> receive username)
+    - handle multiple client inputs
     - chat UI (broadcast chat, update user status, communication errors)
     - logfile sever379procid.log
 */
@@ -27,13 +28,14 @@ int main(void)
 
     int listener;     // listening socket descriptor
     int newfd;        // newly accept()ed socket descriptor
-    struct sockaddr_in sa; 
+    struct sockaddr_in sa;
     struct sockaddr_in remoteaddr; // client address
     socklen_t addrlen;
 
     char buf[256];    // buffer for client data
     int nbytes;
-    
+    unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
+
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j, rv;
 
@@ -41,13 +43,13 @@ int main(void)
     FD_ZERO(&read_fds);
 
     listener = socket(AF_INET, SOCK_STREAM, 0);
-	
+
     // get us a socket and bind it
     memset(&sa, 0, sizeof sa);
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = inet_addr("127.0.0.1");
     sa.sin_port = htons(MY_PORT);
-           
+
     if (bind(listener, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
         perror("bind");
     	exit(-1);
@@ -84,6 +86,10 @@ int main(void)
                     if (newfd == -1) {
                         perror("accept");
                     } else {
+                        //send handshake to new client
+	                      if(send(newfd, handbuf, sizeof(handbuf), 0) == -1){
+				                    perror("Handshake send failure");
+		                    }
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
@@ -105,11 +111,14 @@ int main(void)
                         FD_CLR(i, &master); // remove from master set
                     } else {
                         // we got some data from a client
+                        printf("%s",buf);
                         for(j = 0; j <= fdmax; j++) {
                             // send to everyone!
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
-                                if (j != listener && j != i) {
+                                if (j != listener && j != i ) {
+
+
                                     if (send(j, buf, nbytes, 0) == -1) {
                                         perror("send");
                                     }
@@ -121,6 +130,6 @@ int main(void)
             } // END got new incoming connection
         } // END looping through file descriptors
     } // END for(;;)--and you thought it would never end!
-    
+
     return 0;
 }
