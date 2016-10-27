@@ -2,6 +2,7 @@
   TODO:
     - from commandline: chat379 <hostname> <portnumber> <username>
     - handshake (connection -> receives hex -> responds username)
+		- clean up zombie children
     - chat UI (chat, user status)
     - chat message -- commandline input, then to server
     - keepalive
