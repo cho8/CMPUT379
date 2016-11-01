@@ -20,6 +20,26 @@
 
 #define MY_PORT 2222   // port we're listening on
 
+void handleUserChat(){};
+void handleUserDC(){};
+void handleUserCon(){};
+
+
+void parseMessage(char *buf) {
+  switch(buf[0]) {
+    case (unsigned char)0x00 :
+      printf("== Received 0x00 ==\n");
+      handleUserChat();
+      break;
+    case (unsigned char)0x01 :
+      handleUserCon();
+      break;
+    case (unsigned char)0x02 :
+      handleUserDC();
+      break;
+  }
+}
+
 int main(void)
 {
     fd_set master;    // master file descriptor list
@@ -32,9 +52,10 @@ int main(void)
     struct sockaddr_in remoteaddr; // client address
     socklen_t addrlen;
 
-    char buf[256];    // buffer for client data
+    char buf[512];    // buffer for client data
     int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
+    int n_users=0;
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j, rv;
@@ -67,29 +88,48 @@ int main(void)
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
 
+
+    // TODO fork for reading??
     // main loop
-    for(;;) {
+    while(1) {
+
+        // Check idle clientfds
+
+
         read_fds = master; // copy it
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
             perror("select");
             exit(-1);
         }
 
+        // TODO fork child for handling writing?
+
         // run through the existing connections looking for data to read
         for(i = 0; i <= fdmax; i++) {
+
             if (FD_ISSET(i, &read_fds)) { // we got one!!
-                if (i == listener) {
-                    // handle new connections
+
+              // handle new connections
+              if (i == listener) {
+
+                    // Accept new connection
                     addrlen = sizeof remoteaddr;
                     newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
 
                     if (newfd == -1) {
                         perror("accept");
                     } else {
-                        //send handshake to new client
-	                      if(send(newfd, handbuf, sizeof(handbuf), 0) == -1){
-				                    perror("Handshake send failure");
+                        // ===== handshake ====
+	                      if(send(newfd, handbuf, sizeof(handbuf), 0) == -1) {
+				                    perror("handshake send");
 		                    }
+                        n_users++;
+                        printf("New user count %d\n",n_users);
+                        sprintf(buf, "%d", n_users);
+                        if(send(newfd, buf, sizeof(buf), 0) == -1) {
+                            perror("n_users send");
+                        }
+                        // ====================
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
@@ -99,37 +139,40 @@ int main(void)
                     }
                 } else {
                     // handle data from a client
-                    if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0) {
+                    nbytes = recv(i, buf, sizeof(buf)-1, 0);
+                    if (nbytes <= 0) {
                         // got error or connection closed by client
                         if (nbytes == 0) {
                             // connection closed
                             printf("selectserver: socket %d hung up\n", i);
+
                         } else {
                             perror("recv");
                         }
                         close(i); // bye!
                         FD_CLR(i, &master); // remove from master set
+                        n_users--;
                     } else {
                         // we got some data from a client
                         printf("%s",buf);
+                        parseMessage(buf);
+
+                        // send to everuone
                         for(j = 0; j <= fdmax; j++) {
-                            // send to everyone!
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
                                 if (j != listener && j != i ) {
-
-
                                     if (send(j, buf, nbytes, 0) == -1) {
                                         perror("send");
                                     }
                                 }
                             }
-                        }
+                        } // END send to everyone
                     }
                 } // END handle data from client
             } // END got new incoming connection
         } // END looping through file descriptors
-    } // END for(;;)--and you thought it would never end!
+    } // END while
 
     return 0;
 }
