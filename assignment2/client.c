@@ -27,13 +27,17 @@ unsigned char CODE_MSG = 0X00;
 #define  CODE_ENT 0x01
 #define  CODE_EXT 0x02
 
-void packageMessage(int s, unsigned char* sndbuf, char* message, int numchar) {
-	sndbuf[0] = CODE_MSG;
-	send(s, sndbuf, sizeof(unsigned char),0);
-
-	for (int i=0; i<numchar; i++) {
-		send(s,message,sizeof(unsigned char),0);
+void packageMessage(int s, unsigned char* sndbuf, char* message, unsigned int numchar) {
+	sndbuf[0] = (char)numchar;
+	printf("%c ",sndbuf[0]);
+	int i;
+	for (i=1; i<=numchar; i++) {
+		sndbuf[i]=message[i-1];
 	}
+	printf("sendbuf: %s\n",sndbuf);
+	send(s, sndbuf, sizeof(unsigned char)*(numchar+1),0);
+
+	message[0]='\0';					// clear the message buffer
  }
 
 void parseMessage(char* rcvbuf, char* buf) {
@@ -43,10 +47,10 @@ void parseMessage(char* rcvbuf, char* buf) {
 int main(int argc, char *argv[]) {
 	int	s;																		//sock
 	int fdmax;																//max file descriptors
-	int n_users;															//number of users
+	unsigned int n_users;															//number of users
 
 	int BUFSIZE = 512;
-	char buf[BUFSIZE];
+	char buf[BUFSIZE];												// buffer for getting input
 	unsigned char sndbuf[BUFSIZE];
 	char rcvbuf[BUFSIZE];
 	unsigned char handbuf[2] = {0};						// handshake buffer
@@ -141,7 +145,8 @@ int main(int argc, char *argv[]) {
 		while (1) {
 
 			fgets(buf,BUFSIZE-1,stdin);
-			int len = strlen(buf);
+			unsigned int len = strlen(buf)-1;
+			printf("len %d\n", len);
 			if(strncmp(buf, "exit",4)==0) {
 				break;
 			}

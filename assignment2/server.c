@@ -20,26 +20,24 @@
 
 #define MY_PORT 2222   // port we're listening on
 
-void handleUserChat(int s, char * buf){
-  int numchar;
+void handleUserChat(int s, char *buf){
+  // receive msg len
+  unsigned int numchar = (unsigned int) buf[0];
+  printf("numchar: %d\n", numchar);
 
-  // receive message len
-  recv(s,buf,sizeof(unsigned char),0);
-  numchar = atoi(buf);
-  printf("%d\n", numchar);
+  recv(s,buf,sizeof(unsigned char)*numchar,0);
 
-
-
+  printf("char: %s\n",buf);
 }
+
 void handleUserDC(){};
 void handleUserCon(){};
 
 
-void parseMessage(int s, char *buf, char *rcvbuf) {
+void parseMessage(int s, char *buf) {
   switch(buf[0]) {
     case (unsigned char)0x00 :
       printf("== Received 0x00 ==\n");
-      handleUserChat(s, buf);
       break;
     case (unsigned char)0x01 :
       handleUserCon();
@@ -66,7 +64,7 @@ int main(void)
     char rcvbuf[512]; // buffer for received data
     int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
-    int n_users=0;
+    unsigned int n_users=0;
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j, rv;
@@ -151,7 +149,7 @@ int main(void)
                     }
                 } else {
                     // handle data from a client
-                    nbytes = recv(i, buf, sizeof(buf)-1, 0);
+                    nbytes = recv(i, buf, sizeof(unsigned char), 0);
                     if (nbytes <= 0) {
                         // got error or connection closed by client
                         if (nbytes == 0) {
@@ -165,11 +163,22 @@ int main(void)
                         FD_CLR(i, &master); // remove from master set
                         n_users--;
                     } else {
-                        // we got some data from a client
-                        printf("%s",buf);
-                        parseMessage(i, buf, rcvbuf);
+                        // we got some message from a client
+                        printf("Got: %d ", (unsigned int)buf[0]);
 
-                        // send to everuone
+                        // get the len
+                        unsigned int numchar = (unsigned int) buf[0];
+                        printf("numchar: %d\n", numchar);
+
+                        // get the message string
+                        nbytes = recv(i,buf,sizeof(unsigned char)*numchar,0);
+
+                        // print to the server for debugging
+                        for (int i=1; i<=nbytes; i++) {
+                          printf("%c",buf[i-1]);
+                        } printf("\n");
+
+                        // send to everyone
                         for(j = 0; j <= fdmax; j++) {
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
