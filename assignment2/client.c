@@ -27,23 +27,14 @@ unsigned char CODE_MSG = 0X00;
 #define  CODE_ENT 0x01
 #define  CODE_EXT 0x02
 
-void packageMessage(int s, unsigned char* sndbuf, char* message, char* username) {
+void packageMessage(int s, unsigned char* sndbuf, char* message, int numchar) {
 	sndbuf[0] = CODE_MSG;
 	send(s, sndbuf, sizeof(unsigned char),0);
-	//strcat(sndbuf, " ");
-	// sprintf(buffer,"%lu ",strlen(username));
-	// strcat(sndbuf, buffer);	// length of username
-	// strcat(sndbuf, username);								// username
-	// strcat(sndbuf, " ");
-	// if (code==CODE_MSG) {
-	// 		sprintf(buffer,"%lu ",strlen(message)-1);
-	// 		strcat(sndbuf, buffer);	// length of message
-	// 		strcat(sndbuf, message);
-	//
-	// }
-	// strcat(sndbuf, "\n");										// end message
-	// write(s,sndbuf, BUFSIZE);
-}
+
+	for (int i=0; i<numchar; i++) {
+		send(s,message,sizeof(unsigned char),0);
+	}
+ }
 
 void parseMessage(char* rcvbuf, char* buf) {
 	// parse user-update status nessages sent by server
@@ -150,12 +141,12 @@ int main(int argc, char *argv[]) {
 		while (1) {
 
 			fgets(buf,BUFSIZE-1,stdin);
-
+			int len = strlen(buf);
 			if(strncmp(buf, "exit",4)==0) {
 				break;
 			}
 
-			packageMessage(s, sndbuf, buf, argv[3]);
+			packageMessage(s, sndbuf, buf, len);
 			// printf("Buf: %s\n", sndbuf);
 
 

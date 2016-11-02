@@ -20,16 +20,26 @@
 
 #define MY_PORT 2222   // port we're listening on
 
-void handleUserChat(){};
+void handleUserChat(int s, char * buf){
+  int numchar;
+
+  // receive message len
+  recv(s,buf,sizeof(unsigned char),0);
+  numchar = atoi(buf);
+  printf("%d\n", numchar);
+
+
+
+}
 void handleUserDC(){};
 void handleUserCon(){};
 
 
-void parseMessage(char *buf) {
+void parseMessage(int s, char *buf, char *rcvbuf) {
   switch(buf[0]) {
     case (unsigned char)0x00 :
       printf("== Received 0x00 ==\n");
-      handleUserChat();
+      handleUserChat(s, buf);
       break;
     case (unsigned char)0x01 :
       handleUserCon();
@@ -53,6 +63,7 @@ int main(void)
     socklen_t addrlen;
 
     char buf[512];    // buffer for client data
+    char rcvbuf[512]; // buffer for received data
     int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
     int n_users=0;
@@ -123,8 +134,8 @@ int main(void)
 	                      if(send(newfd, handbuf, sizeof(handbuf), 0) == -1) {
 				                    perror("handshake send");
 		                    }
-                        n_users++;
-                        printf("New user count %d\n",n_users);
+
+                        printf("Current user count %d\n",n_users);
                         sprintf(buf, "%d", n_users);
                         if(send(newfd, buf, sizeof(buf), 0) == -1) {
                             perror("n_users send");
@@ -134,6 +145,7 @@ int main(void)
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
+                        n_users++;
                         printf("selectserver: new connection from %s:%d on socket %d\n",
                             inet_ntoa(remoteaddr.sin_addr), ntohs(remoteaddr.sin_port), newfd);
                     }
@@ -155,7 +167,7 @@ int main(void)
                     } else {
                         // we got some data from a client
                         printf("%s",buf);
-                        parseMessage(buf);
+                        parseMessage(i, buf, rcvbuf);
 
                         // send to everuone
                         for(j = 0; j <= fdmax; j++) {
