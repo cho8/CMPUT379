@@ -3,13 +3,13 @@
 
 /*
 	Prepares the message by attaching length byte to the front of the message.
-	Package the message into the buffer position "i" of the buffer.
+	Package the message into the buffer position "offs" of the buffer.
 */
-void prepareMessage(unsigned char* sndbuf, int i, char* message, unsigned int numchar) {
-	sndbuf[0] = (unsigned char)numchar;
+void prepareMessage(unsigned char* sndbuf, int offs, char* message, unsigned int numchar) {
+	sndbuf[offs] = (unsigned char)numchar;
 
 	int i;
-	for (i=1; i<=numchar; i++) {
+	for (i=1+offs; i<=numchar; i++) {
 		sndbuf[i]=message[i-1];
 	}
  }
@@ -39,12 +39,13 @@ void sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
 	Print n bytes (plus length byte) of content in a buffer.
 	If 0 numchar, print the whole buf.
 */
-void printBuf(unsigned char* buf, unsigned int numchar) {
+void printBuf(char* label, unsigned char* buf, unsigned int numchar) {
 
-		printf("[Buffer] : ");
-	if (numchar ==0) {
+	printf("[%s] : ",label);
+	if (numchar==0) {
 		printf("%s\n", buf);
 	} else {
+		// printf("%d", (unsigned int) buf[0]);
 		int i;
 		for (i=0; i<=numchar; i++) {
 			printf("%c", (unsigned char) buf[i]);

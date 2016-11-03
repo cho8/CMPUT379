@@ -63,15 +63,16 @@ int main(void)
     struct sockaddr_in remoteaddr; // client address
     socklen_t addrlen;
 
-    unsigned char buf[512];    // buffer for client data
-    unsigned char sndbuf[512]; // buffer for received data
-    int nbytes;
+    int BUFSIZE = 512;
+    unsigned char buf[BUFSIZE];    // buffer for client data
+    unsigned char sndbuf[BUFSIZE]; // buffer for received data
+    unsigned int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
     unsigned int n_users=0;
     unsigned char userlist[20][20];
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
-    int i, j, rv;
+    int i, j;
 
     FD_ZERO(&master);    // clear the master and temp sets
     FD_ZERO(&read_fds);
@@ -159,11 +160,9 @@ int main(void)
                             for (i=1; i<=userlen; i++) {
                               sndbuf[i]=userlist[k][i];
                             }
-                            printBuf(sndbuf,userlen);
+                            printBuf("username len",sndbuf,userlen);
                             sendMessage(newfd, sndbuf, userlen);
-                            // if (send(newfd, sndbuf, userlen, 0) == -1) {
-                            //     perror("userlist send");
-                            // }
+
                           }
                         } // END list of users
 
@@ -181,7 +180,7 @@ int main(void)
 
                         printf("New user: %s\n", userlist[n_users]);
                         for (int l=0; l<n_users+1;l++) {
-                          printBuf(userlist[l],20);
+                          printBuf("userlist",userlist[l],(unsigned int)userlist[l][0]);
                         }
                         n_users++;
                         // ====================
@@ -189,7 +188,7 @@ int main(void)
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
-
+                        printf("FD: %d\n",newfd);
                         // TODO
                         // ======== New User Connected Broadcast ==========
                         printf("selectserver: new connection from %s:%d on socket %d\n",
@@ -212,19 +211,16 @@ int main(void)
                         n_users--;
                     } else {
                         // we got some message from a client
-                        printf("Got: %d ", (unsigned int)buf[0]);
 
                         // get the len
                         unsigned int numchar = (unsigned int) buf[0];
-                        printf("numchar: %d\n", numchar);
+                        printf("Got: %d\n", numchar);
 
                         // get the message string
                         nbytes = recv(i,buf,sizeof(unsigned char)*numchar,0);
-
-                        // print to the server for debugging
-                        for (int i=1; i<=nbytes; i++) {
-                          printf("%c",buf[i-1]);
-                        } printf("\n");
+                        // receiveMessage(i, buf, numchar);
+                        // print to the server for debugging (-1 because no len byte)
+                        printBuf("rcv message",buf,numchar-1);
 
                         // send to everyone
                         for(j = 0; j <= fdmax; j++) {

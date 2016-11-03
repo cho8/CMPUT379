@@ -37,12 +37,11 @@ void packageMessage(int s, unsigned char* sndbuf, char* message, unsigned int nu
 	}
  }
 
-
 int main(int argc, char *argv[]) {
-	int	s;																		//sock
-	int fdmax;																//max file descriptors
-	unsigned int n_users;															//number of users
-	unsigned int nbytes;
+	int	s;											//sock
+	int fdmax;									//max file descriptors
+	unsigned int n_users; 			//number of users
+	unsigned int nbytes;				//num bytes sent/received
 
 	int BUFSIZE = 512;
 	char buf[BUFSIZE];												// buffer for getting input
@@ -79,7 +78,7 @@ int main(int argc, char *argv[]) {
 	// bzero (&server, sizeof (server)); // set everything to zero byte-to-byte
 	// bcopy (host->h_addr, & (server.sin_addr), host->h_length); // copy stuff form server
 
-	// server.sin_addr.s_addr = inet_addr("localhost");
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server.sin_family = host->h_addrtype;
 	server.sin_port = htons (MY_PORT);
 
@@ -132,26 +131,30 @@ int main(int argc, char *argv[]) {
 	for (i=1; i<=userlen; i++) {
 		sndbuf[i]=argv[3][i-1];
 	}
-	printBuf(sndbuf,userlen);
+	printBuf("send username", sndbuf,userlen);
 
-	nbytes = 0;
-	printf("Sending username\n");
-	while(nbytes<userlen) {
-		nbytes += send(s, sndbuf, sizeof(unsigned char)*userlen+1, 0);
-	}
+	// nbytes = 0;
+	// while(nbytes<userlen) {
+	// 	nbytes += send(s, sndbuf, sizeof(unsigned char)*userlen+1, 0);
+	// }
+	sendMessage(s,sndbuf,userlen);
 
-	printf ("Forking for read channel...\n");
+
 	pid_t pid = fork();
 	if (pid < 0) exit(1);
 	if (pid==0) {
+			printf ("Forking for read channel...\n");
 			// child process for reading
 			while (1) {
 
-				recv(s, rcvbuf, sizeof(rcvbuf), 0);
+				receiveMessage(s,rcvbuf,1);
+				int len=(unsigned int)rcvbuf[0];
+				receiveMessage(s,rcvbuf,len);
 				printf("%s", rcvbuf);
 			}
 			close(s);
 	} else {
+		printf("Joining the chat channel...\n");
 		// parent process for writing
 		while (1) {
 
@@ -161,7 +164,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 
-			prepareMessage(s, sndbuf, buf, len);
+			prepareMessage(sndbuf, 0, buf, len);
 			sendMessage(s,sndbuf,len);
 			// printf("Buf: %s\n", sndbuf);
 
