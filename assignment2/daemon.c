@@ -12,6 +12,7 @@ int main(int argc, char* argv[])
     FILE *fp= NULL;
     int i = 0;
     pid = fork();
+    char *logname;
 
     if (pid < 0)
     {
@@ -29,8 +30,10 @@ int main(int argc, char* argv[])
     umask(0);
 
 	// open a log file
-    //TODO: change this to take in the server process id
-    fp = fopen ("server379%d.log", "w+");
+    strcpy(logname, "server379");
+    strcat(logname, (char) pid);
+    strcat(logname, ".log");
+    fp = fopen (logname, "w+");
     if(!fp){
     	printf("cannot open log file");
     }
@@ -54,13 +57,15 @@ int main(int argc, char* argv[])
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
-    while (i < 20)
-    {
-        sleep(1);
-        fprintf(fp, "%d", i);
-        fflush(fp);
-        i++;
-    }
+	//INSERT SERVER CODE HERE
+
+//    while (i < 20)
+//    {
+//        sleep(1);
+//        fprintf(fp, "%d", i);
+//        fflush(fp);
+//        i++;
+//    }
 
     fclose(fp);
   
