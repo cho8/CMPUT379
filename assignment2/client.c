@@ -1,12 +1,13 @@
 /*
   TODO:
-    - from commandline: chat379 <hostname> <portnumber> <username>
-    - handshake (connection -> receives hex -> responds username)
+    - from commandline: chat379 <hostname> <portnumber> <username>	(can use ./chat379 ...)
+    - handshake (connection -> receives hex -> responds username) [X]
 		- clean up zombie children
     - chat UI (chat, user status) [X]
     - chat message -- commandline input, then to server [X]
     - keepalive [X]
     - receive server errors
+    - connect to actual host
 */
 
 
@@ -57,7 +58,7 @@ void parseMessage(char* rcvbuf, char* buf) {		// parse user update messages sent
 	int length;
 
 	buf = strtok(rcvbuf, " ");
-	length = (int) trtok(rcvbuf, " ");
+	length = ntohs((int) strtok(rcvbuf, " "));	//length has message length in host' order
 
 	if(strncmp(buf, "0x01", 4) == 0){
 		buf = strtok(rcvbuf, " ");
@@ -69,6 +70,7 @@ void parseMessage(char* rcvbuf, char* buf) {		// parse user update messages sent
 		printf("User %.*rcvbuf has left the chat.\n", length, buf);
 	}
 }
+
 
 
 
@@ -145,18 +147,20 @@ int main(int argc, char *argv[]) {
 	printf("Received handshake\n");
 
 	recv(s, rcvbuf, sizeof(rcvbuf), 0);
-	n_users=atoi(rcvbuf);
+	n_users = atoi(ntohs(rcvbuf));
 
 
-	//TODO handle usernames in "length message" format
+	//List users already in chat
 	printf("%d users connected.\n", n_users);
 	for (int i=0; i<atoi(rcvbuf); i++) {
 		recv(s, buf, BUFSIZE, 0)
-		printf("%s \n", buf)
+		printf("%.*buf \n", atoi(buf[0]), buf+1);
 	}
 
-	//TODO send username
-	if(send(s, argv[3], sizeof(handbuf), 0) == -1){
+	//Send username to server
+	strcpy(buf, (char) strlen(argv[3]));
+	strcan(buf, argv[3]);
+	if(send(s, buf, sizeof(handbuf), 0) == -1){
 		perror("Username send failure");
 	}
 
@@ -175,11 +179,11 @@ int main(int argc, char *argv[]) {
 					parseMessage(rcvbuf, buf);
 				} else {					
 					buf = strtok(rcvbuf, " ");	//buf = "0x00"
-					buf = strtok(rcvbuf, " ");	//buf has username length
-					printf("%.*rcvbuf :", (int) buf, buf + sizeof(unsigned int) + sizeof(" "));
+					buf = strtok(rcvbuf, " ");	//buf points to username length in network byte order
+					printf("%.*rcvbuf%s", ntohs((int) buf), buf + sizeof(unsigned int) + sizeof(" "), ":");
 
-					buf = buf + (int) buf;
-					printf("%.*rcvbuf \n", (int) buf, buf + sizeof(unsigned int) + sizeof(" "));
+					buf = buf + ntohs((int) buf);
+					printf("%.*rcvbuf \n", ntohs((int) buf), buf + sizeof(unsigned int) + sizeof(" "));
 				}
 
 			}
@@ -188,7 +192,7 @@ int main(int argc, char *argv[]) {
 		// parent process for writing
 		while (1) {
 
-			if(start_t - time() >= 30){
+			if(time() - start_t >= 30){
 				start_t = start_t + 30;
 				packageMessage(0, sndbuf, "", argv[3]);		//keep-alive message
 			}
