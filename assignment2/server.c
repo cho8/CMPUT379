@@ -37,20 +37,6 @@ void handleUserDC(){};
 void handleUserCon(){};
 
 
-void parseMessage(int s, char *buf) {
-  switch(buf[0]) {
-    case (unsigned char)0x00 :
-      printf("== Received 0x00 ==\n");
-      break;
-    case (unsigned char)0x01 :
-      handleUserCon();
-      break;
-    case (unsigned char)0x02 :
-      handleUserDC();
-      break;
-  }
-}
-
 int main(void)
 {
     fd_set master;    // master file descriptor list
@@ -69,7 +55,8 @@ int main(void)
     unsigned int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
     unsigned int n_users=0;
-    unsigned char userlist[20][20];
+    unsigned int fd_offset=0;
+    unsigned char userlist[50][20];           //50 users, 20 in length
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j;
@@ -101,6 +88,7 @@ int main(void)
 
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
+    fd_offset = fdmax-n_users;  //get offset for array indexing purposes
 
 
     // TODO fork for reading??
@@ -150,20 +138,41 @@ int main(void)
                         // send list of users
                         if (n_users >0 ) {
                           printf("Sending userlist\n");
-                          int k;
+                        //   int k;
                           unsigned int userlen;
-                          for (k=0; k < n_users; k++) {
-                            userlen=(unsigned int)userlist[k][0];
-                            printf(" uln len: %d\n", userlen);
+                        //   for (k=0; k < n_user; k++) {
+                        //     userlen=(unsigned int)userlist[k][0];
+                        //     printf(" uln len: %d\n", userlen);
+                        //
+                        //     sndbuf[0]=userlist[k][0];
+                        //     for (i=1; i<=userlen; i++) {
+                        //       sndbuf[i]=userlist[k][i];
+                        //     }
+                        //     printBuf("username len",sndbuf,userlen);
+                        //     sendMessage(newfd, sndbuf, userlen);
+                        //
+                          // }
 
-                            sndbuf[0]=userlist[k][0];
-                            for (i=1; i<=userlen; i++) {
-                              sndbuf[i]=userlist[k][i];
-                            }
-                            printBuf("username len",sndbuf,userlen);
-                            sendMessage(newfd, sndbuf, userlen);
+                          // loop through all fds associated with usernames
+                          for(j = 0; j <= fdmax; j++) {
+                              if (FD_ISSET(j, &master)) {
+                                  // except the listener and ourselves
+                                  if (j != listener && j != i ) {
+                                    // prepare the username and send it off
+                                    userlen=(unsigned int)userlist[j][0];
+                                    printf(" uln len: %d\n", userlen);
 
-                          }
+                                    sndbuf[0]=userlist[j][0];
+                                    for (i=1; i<=userlen; i++) {
+                                      sndbuf[i]=userlist[j][i];
+                                    }
+                                    printBuf("username len",sndbuf,userlen);
+                                    sendMessage(newfd, sndbuf, userlen);
+
+                                  }
+                              }
+                          } // END send to everyone
+
                         } // END list of users
 
                         // ==== get new username====;
@@ -173,24 +182,54 @@ int main(void)
                         printf("Get username of len %d\n", len);
                         receiveMessage(newfd, buf, len);
 
-                        userlist[n_users][0]=(unsigned char)len;
+                        userlist[newfd][0]=(unsigned char)len;
                         for (int j=1; j<=len; j++) {
-                          userlist[n_users][j]=buf[j-1];
+                          userlist[newfd][j]=buf[j-1];
                         }
 
-                        printf("New user: %s\n", userlist[n_users]);
-                        for (int l=0; l<n_users+1;l++) {
-                          printBuf("userlist",userlist[l],(unsigned int)userlist[l][0]);
-                        }
-                        n_users++;
+                        printf("New user: %s\n", userlist[newfd]);
+                        // for (int l=0; l<n_users+1;l++) {
+                        //   printBuf("userlist",userlist[l],(unsigned int)userlist[l][0]);
+                        // }
+                        // loop through all fds
+                        for(j = 0; j <= fdmax; j++) {
+                            if (FD_ISSET(j, &master)) {
+                                // except the listener and ourselves
+                                if (j != listener ) {
+                                  printBuf("userlist",userlist[j],(unsigned int)userlist[j][0]);
+                                }
+                            }
+                        } // END send to everyone
+
                         // ====================
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
                         printf("FD: %d\n",newfd);
+
                         // TODO
                         // ======== New User Connected Broadcast ==========
+                        // initialize status code
+                        sndbuf[0]=0x01;
+                        //
+                        prepareMessage(sndbuf,1,userlist[newfd],len);
+
+                        // send to everyone
+                        for(j = 0; j <= fdmax; j++) {
+                            if (FD_ISSET(j, &master)) {
+                                // except the listener and ourselves
+                                if (j != listener && j != i ) {
+                                    // if (send(j, buf, nbytes, 0) == -1) {
+                                    //     perror("send");
+                                    // }
+                                     printf("Mock send to fd %d\n",j);
+                                }
+                            }
+                        } // END send to everyone
+
+                        n_users++;
+
                         printf("selectserver: new connection from %s:%d on socket %d\n",
                             inet_ntoa(remoteaddr.sin_addr), ntohs(remoteaddr.sin_port), newfd);
                     }
@@ -202,6 +241,20 @@ int main(void)
                         if (nbytes == 0) {
                             // connection closed
                             printf("selectserver: socket %d hung up\n", i);
+
+                            // TODO
+                            // loop through and find the one that left
+                            // for(j = 0; j <= fdmax; j++) {
+                            //     if (FD_ISSET(j, &master)) {
+                            //         // except the listener and ourselves
+                            //         if (j != listener && j != i ) {
+                            //             // if (send(j, buf, nbytes, 0) == -1) {
+                            //             //     perror("send");
+                            //             // }
+                            //             printf("Mock send to fd %d\n",j);
+                            //         }
+                            //     }
+                            // } // END send to everyone
 
                         } else {
                             perror("recv");

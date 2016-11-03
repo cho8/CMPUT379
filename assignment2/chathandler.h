@@ -5,7 +5,7 @@
 	Prepares the message by attaching length byte to the front of the message.
 	Package the message into the buffer position "offs" of the buffer.
 */
-void prepareMessage(unsigned char* sndbuf, int offs, char* message, unsigned int numchar) {
+void prepareMessage(unsigned char* sndbuf, int offs, unsigned char* message, unsigned int numchar) {
 	sndbuf[offs] = (unsigned char)numchar;
 
 	int i;
