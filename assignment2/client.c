@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include "chathandler.h"
 
 #define	 MY_PORT  2222
 #define  hostaddr "127.0.0.1"
@@ -28,32 +29,26 @@ unsigned char CODE_MSG = 0X00;
 #define  CODE_EXT 0x02
 
 void packageMessage(int s, unsigned char* sndbuf, char* message, unsigned int numchar) {
-	sndbuf[0] = (char)numchar;
-	printf("%c ",sndbuf[0]);
+	sndbuf[0] = (unsigned char)numchar;
+
 	int i;
 	for (i=1; i<=numchar; i++) {
 		sndbuf[i]=message[i-1];
 	}
-	printf("sendbuf: %s\n",sndbuf);
-	send(s, sndbuf, sizeof(unsigned char)*(numchar+1),0);
-
-	message[0]='\0';					// clear the message buffer
  }
 
-void parseMessage(char* rcvbuf, char* buf) {
-	// parse user-update status nessages sent by server
-}
 
 int main(int argc, char *argv[]) {
 	int	s;																		//sock
 	int fdmax;																//max file descriptors
 	unsigned int n_users;															//number of users
+	unsigned int nbytes;
 
 	int BUFSIZE = 512;
 	char buf[BUFSIZE];												// buffer for getting input
 	unsigned char sndbuf[BUFSIZE];
-	char rcvbuf[BUFSIZE];
-	unsigned char handbuf[2] = {0};						// handshake buffer
+	unsigned char rcvbuf[BUFSIZE];
+
 
 	struct	sockaddr_in	server;
 	struct	hostent		*host;
@@ -100,33 +95,50 @@ int main(int argc, char *argv[]) {
 
 	select(fdmax + 1, &clientfds, NULL, NULL, NULL);
 
-	//Client expects server socket to be ready for read past select
+	// Client expects server socket to be ready for read past select
 	if (! FD_ISSET(s, &clientfds)) {
 		perror("handshake receive"); // error
 		exit(1);
 	}
 
+	// ===== Get handshake bytes
+	receiveMessage(s, rcvbuf, 2);
 
-	recv(s, handbuf, sizeof(handbuf), 0);
-	if(handbuf[0] != (unsigned char)0xCF && handbuf[1] != (unsigned char)0xA7) {
+	if(rcvbuf[0] != (unsigned char)0xCF && rcvbuf[1] != (unsigned char)0xA7) {
 		perror ("Client: failed recieve handshake");
 		exit(1);
 	}
 	printf("Received handshake\n");
 
-	recv(s, rcvbuf, sizeof(rcvbuf), 0);
-	n_users=atoi(rcvbuf);
+	// ==== Get number of users
+	receiveMessage(s, rcvbuf, 1);
+	n_users=(unsigned int)rcvbuf[0];
 
 	printf("%d users connected.\n", n_users);
-	// for (int i=0; i<atoi(rcvbuf); i++) {
-	// 	// recv(s,rcvbuf, )
-	// 	// printf()
-	// }
+	if (n_users>0) {
+		printf("Receiving userlist\n");
+		for (int i=0; i<n_users; i++) {
+			receiveMessage(s, rcvbuf, 1);
+			unsigned int len = (unsigned int)rcvbuf[0];
+			receiveMessage(s, rcvbuf, len);
+			printf("-- %s\n", rcvbuf);
+		}
+	}
 
-	//TODO send username
-	// if(send(s, argv[3], sizeof(handbuf), 0) == -1){
-	// 		perror("Username send failure");
-	// }
+	//TODO ==== Send user name =====
+	unsigned int userlen = strlen(argv[3]);
+	sndbuf[0] = (unsigned char)userlen;
+	int i=0;
+	for (i=1; i<=userlen; i++) {
+		sndbuf[i]=argv[3][i-1];
+	}
+	printBuf(sndbuf,userlen);
+
+	nbytes = 0;
+	printf("Sending username\n");
+	while(nbytes<userlen) {
+		nbytes += send(s, sndbuf, sizeof(unsigned char)*userlen+1, 0);
+	}
 
 	printf ("Forking for read channel...\n");
 	pid_t pid = fork();
@@ -137,7 +149,6 @@ int main(int argc, char *argv[]) {
 
 				recv(s, rcvbuf, sizeof(rcvbuf), 0);
 				printf("%s", rcvbuf);
-
 			}
 			close(s);
 	} else {
@@ -146,15 +157,13 @@ int main(int argc, char *argv[]) {
 
 			fgets(buf,BUFSIZE-1,stdin);
 			unsigned int len = strlen(buf)-1;
-			printf("len %d\n", len);
 			if(strncmp(buf, "exit",4)==0) {
 				break;
 			}
 
-			packageMessage(s, sndbuf, buf, len);
+			prepareMessage(s, sndbuf, buf, len);
+			sendMessage(s,sndbuf,len);
 			// printf("Buf: %s\n", sndbuf);
-
-
 
 		}
 		// close the child reading process

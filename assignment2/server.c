@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include "chathandler.h"
 
 #define MY_PORT 2222   // port we're listening on
 
@@ -24,11 +25,13 @@ void handleUserChat(int s, char *buf){
   // receive msg len
   unsigned int numchar = (unsigned int) buf[0];
   printf("numchar: %d\n", numchar);
-
-  recv(s,buf,sizeof(unsigned char)*numchar,0);
+  unsigned int nbytes=0;
+  while (nbytes<numchar) {
+    nbytes += recv(s,buf,sizeof(unsigned char)*numchar,0);
+  }
 
   printf("char: %s\n",buf);
-}
+  }
 
 void handleUserDC(){};
 void handleUserCon(){};
@@ -60,11 +63,12 @@ int main(void)
     struct sockaddr_in remoteaddr; // client address
     socklen_t addrlen;
 
-    char buf[512];    // buffer for client data
-    char rcvbuf[512]; // buffer for received data
+    unsigned char buf[512];    // buffer for client data
+    unsigned char sndbuf[512]; // buffer for received data
     int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
     unsigned int n_users=0;
+    unsigned char userlist[20][20];
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j, rv;
@@ -105,6 +109,7 @@ int main(void)
         // Check idle clientfds
 
 
+        // check for things
         read_fds = master; // copy it
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
             perror("select");
@@ -128,22 +133,65 @@ int main(void)
                     if (newfd == -1) {
                         perror("accept");
                     } else {
-                        // ===== handshake ====
+                        // ===== Send handshake ====
+
 	                      if(send(newfd, handbuf, sizeof(handbuf), 0) == -1) {
 				                    perror("handshake send");
 		                    }
+                        printf("Send handshake\n");
 
+                        // ==== Send number of users
                         printf("Current user count %d\n",n_users);
-                        sprintf(buf, "%d", n_users);
-                        if(send(newfd, buf, sizeof(buf), 0) == -1) {
+                        buf[0] = (unsigned char)n_users;
+                        if(send(newfd, buf, sizeof(unsigned char), 0) == -1) {
                             perror("n_users send");
                         }
+                        // send list of users
+                        if (n_users >0 ) {
+                          printf("Sending userlist\n");
+                          int k;
+                          unsigned int userlen;
+                          for (k=0; k < n_users; k++) {
+                            userlen=(unsigned int)userlist[k][0];
+                            printf(" uln len: %d\n", userlen);
+
+                            sndbuf[0]=userlist[k][0];
+                            for (i=1; i<=userlen; i++) {
+                              sndbuf[i]=userlist[k][i];
+                            }
+                            printBuf(sndbuf,userlen);
+                            sendMessage(newfd, sndbuf, userlen);
+                            // if (send(newfd, sndbuf, userlen, 0) == -1) {
+                            //     perror("userlist send");
+                            // }
+                          }
+                        } // END list of users
+
+                        // ==== get new username====;
+                        receiveMessage(newfd, buf,1);
+
+                        unsigned int len = (unsigned int)buf[0];
+                        printf("Get username of len %d\n", len);
+                        receiveMessage(newfd, buf, len);
+
+                        userlist[n_users][0]=(unsigned char)len;
+                        for (int j=1; j<=len; j++) {
+                          userlist[n_users][j]=buf[j-1];
+                        }
+
+                        printf("New user: %s\n", userlist[n_users]);
+                        for (int l=0; l<n_users+1;l++) {
+                          printBuf(userlist[l],20);
+                        }
+                        n_users++;
                         // ====================
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
-                        n_users++;
+
+                        // TODO
+                        // ======== New User Connected Broadcast ==========
                         printf("selectserver: new connection from %s:%d on socket %d\n",
                             inet_ntoa(remoteaddr.sin_addr), ntohs(remoteaddr.sin_port), newfd);
                     }
@@ -189,6 +237,7 @@ int main(void)
                                 }
                             }
                         } // END send to everyone
+
                     }
                 } // END handle data from client
             } // END got new incoming connection
