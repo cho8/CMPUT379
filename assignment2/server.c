@@ -137,22 +137,8 @@ int main(void)
                         }
                         // send list of users
                         if (n_users >0 ) {
-                          printf("Sending userlist\n");
-                        //   int k;
+                          // printf("Sending userlist\n");
                           unsigned int userlen;
-                        //   for (k=0; k < n_user; k++) {
-                        //     userlen=(unsigned int)userlist[k][0];
-                        //     printf(" uln len: %d\n", userlen);
-                        //
-                        //     sndbuf[0]=userlist[k][0];
-                        //     for (i=1; i<=userlen; i++) {
-                        //       sndbuf[i]=userlist[k][i];
-                        //     }
-                        //     printBuf("username len",sndbuf,userlen);
-                        //     sendMessage(newfd, sndbuf, userlen);
-                        //
-                          // }
-
                           // loop through all fds associated with usernames
                           for(j = 0; j <= fdmax; j++) {
                               if (FD_ISSET(j, &master)) {
@@ -179,6 +165,7 @@ int main(void)
                         receiveMessage(newfd, buf,1);
 
                         unsigned int len = (unsigned int)buf[0];
+
                         printf("Get username of len %d\n", len);
                         receiveMessage(newfd, buf, len);
 
@@ -188,10 +175,8 @@ int main(void)
                         }
 
                         printf("New user: %s\n", userlist[newfd]);
-                        // for (int l=0; l<n_users+1;l++) {
-                        //   printBuf("userlist",userlist[l],(unsigned int)userlist[l][0]);
-                        // }
-                        // loop through all fds
+
+                        // Print out current user list for funsies
                         for(j = 0; j <= fdmax; j++) {
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
@@ -199,20 +184,19 @@ int main(void)
                                   printBuf("userlist",userlist[j],(unsigned int)userlist[j][0]);
                                 }
                             }
-                        } // END send to everyone
-
+                        }
                         // ====================
+
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
-                        printf("FD: %d\n",newfd);
 
                         // TODO
-                        // ======== New User Connected Broadcast ==========
+                        // ======== User Coonnected Broadcast ==========
                         // initialize status code
                         sndbuf[0]=0x01;
-                        //
+                        // append the DC'd user
                         prepareMessage(sndbuf,1,userlist[newfd],len);
 
                         // send to everyone
@@ -220,10 +204,7 @@ int main(void)
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
                                 if (j != listener && j != i ) {
-                                    // if (send(j, buf, nbytes, 0) == -1) {
-                                    //     perror("send");
-                                    // }
-                                     printf("Mock send to fd %d\n",j);
+                                    sendMessage(j,sndbuf,len);
                                 }
                             }
                         } // END send to everyone
@@ -239,22 +220,24 @@ int main(void)
                     if (nbytes <= 0) {
                         // got error or connection closed by client
                         if (nbytes == 0) {
-                            // connection closed
+                            // ====== User Disconnected  =======
                             printf("selectserver: socket %d hung up\n", i);
+
+                            unsigned int len = (unsigned int)userlist[i][0];
+                            sndbuf[0]=0x01;
+                            // append the DC'd user
+                            prepareMessage(sndbuf,1,userlist[newfd],len);
 
                             // TODO
                             // loop through and find the one that left
-                            // for(j = 0; j <= fdmax; j++) {
-                            //     if (FD_ISSET(j, &master)) {
-                            //         // except the listener and ourselves
-                            //         if (j != listener && j != i ) {
-                            //             // if (send(j, buf, nbytes, 0) == -1) {
-                            //             //     perror("send");
-                            //             // }
-                            //             printf("Mock send to fd %d\n",j);
-                            //         }
-                            //     }
-                            // } // END send to everyone
+                            for(j = 0; j <= fdmax; j++) {
+                                if (FD_ISSET(j, &master)) {
+                                    // except the listener and ourselves
+                                    if (j != listener ) {
+                                        sendMessage(j,sndbuf,len);
+                                    }
+                                }
+                            } // END send to everyone
 
                         } else {
                             perror("recv");
@@ -265,15 +248,19 @@ int main(void)
                     } else {
                         // we got some message from a client
 
-                        // get the len
+                        // get the len of message
                         unsigned int numchar = (unsigned int) buf[0];
                         printf("Got: %d\n", numchar);
 
                         // get the message string
-                        nbytes = recv(i,buf,sizeof(unsigned char)*numchar,0);
-                        // receiveMessage(i, buf, numchar);
+                        receiveMessage(i, buf, numchar);
+
                         // print to the server for debugging (-1 because no len byte)
                         printBuf("rcv message",buf,numchar-1);
+
+                        // prep message packageMessage
+                        // snbuf[0] = 0x00;  // chat code
+
 
                         // send to everyone
                         for(j = 0; j <= fdmax; j++) {

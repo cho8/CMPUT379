@@ -28,13 +28,40 @@ unsigned char CODE_MSG = 0X00;
 #define  CODE_ENT 0x01
 #define  CODE_EXT 0x02
 
-void packageMessage(int s, unsigned char* sndbuf, char* message, unsigned int numchar) {
-	sndbuf[0] = (unsigned char)numchar;
+void parseServerMessage(int s, unsigned char* rcvbuf) {
+	int len=1;
+	receiveMessage(s,rcvbuf,len);	// get the code
+	switch (rcvbuf[0]) {
+		case 0x00 :	// we a chat message
 
-	int i;
-	for (i=1; i<=numchar; i++) {
-		sndbuf[i]=message[i-1];
+			receiveMessage(s,rcvbuf,len);	// get the user length byte
+			len=(unsigned int)rcvbuf[0];
+			receiveMessage(s,rcvbuf,len); // get the user name bytes
+			printBuf("User",rcvbuf,len-1);
+
+			receiveMessage(s,rcvbuf,len);	// get the message length byte
+			len=(unsigned int)rcvbuf[0];
+			receiveMessage(s,rcvbuf,len); // get the message name bytes
+			printBuf("Message", rcvbuf,len-1);
+
+			break;
+		case 0x01 : // yo sum1 joined
+			receiveMessage(s,rcvbuf,len);
+			len=(unsigned int)rcvbuf[0];
+			receiveMessage(s,rcvbuf,len);
+			printf(" === User connected: ");
+			printBuf("Connected", rcvbuf,len);
+			break;
+		case 0x02 :	// okbai
+			receiveMessage(s,rcvbuf,len);
+			len=(unsigned int)rcvbuf[0];
+			receiveMessage(s,rcvbuf,len);
+			printf(" === User disconnected: ");
+			printBuf("Connected", rcvbuf,len);
+			break;
 	}
+
+
  }
 
 int main(int argc, char *argv[]) {
@@ -132,13 +159,9 @@ int main(int argc, char *argv[]) {
 		sndbuf[i]=argv[3][i-1];
 	}
 	printBuf("send username", sndbuf,userlen);
-
-	// nbytes = 0;
-	// while(nbytes<userlen) {
-	// 	nbytes += send(s, sndbuf, sizeof(unsigned char)*userlen+1, 0);
-	// }
 	sendMessage(s,sndbuf,userlen);
 
+	// start loops
 
 	pid_t pid = fork();
 	if (pid < 0) exit(1);
@@ -147,27 +170,26 @@ int main(int argc, char *argv[]) {
 			// child process for reading
 			while (1) {
 
-				receiveMessage(s,rcvbuf,1);
-				int len=(unsigned int)rcvbuf[0];
-				receiveMessage(s,rcvbuf,len);
-				printf("%s", rcvbuf);
+				parseServerMessage(s,rcvbuf);
 			}
 			close(s);
+
 	} else {
 		printf("Joining the chat channel...\n");
 		// parent process for writing
 		while (1) {
 
+			unsigned char ubuf[BUFSIZE];
 			fgets(buf,BUFSIZE-1,stdin);
+			strncpy((char*)ubuf, buf, 512);	// signed to unsigned char*
+
 			unsigned int len = strlen(buf)-1;
-			if(strncmp(buf, "exit",4)==0) {
+			if(strncmp((char*)ubuf, "exit",4)==0) {
 				break;
 			}
 
-			prepareMessage(sndbuf, 0, buf, len);
+			prepareMessage(sndbuf, 0, ubuf, len);
 			sendMessage(s,sndbuf,len);
-			// printf("Buf: %s\n", sndbuf);
-
 		}
 		// close the child reading process
 		kill(pid, SIGTERM);
