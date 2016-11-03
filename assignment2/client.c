@@ -21,7 +21,7 @@
 #include <arpa/inet.h>
 #include "chathandler.h"
 
-#define	 MY_PORT  2222
+#define	 MY_PORT  2221
 #define  hostaddr "127.0.0.1"
 
 unsigned char CODE_MSG = 0X00;
@@ -30,34 +30,34 @@ unsigned char CODE_MSG = 0X00;
 
 void parseServerMessage(int s, unsigned char* rcvbuf) {
 	int len=1;
-	receiveMessage(s,rcvbuf,len);	// get the code
+	receiveMessage(s,rcvbuf,1);	// get the code
 	switch (rcvbuf[0]) {
 		case 0x00 :	// we a chat message
 
-			receiveMessage(s,rcvbuf,len);	// get the user length byte
+			receiveMessage(s,rcvbuf,1);	// get the user length byte
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len); // get the user name bytes
-			printBuf("User",rcvbuf,len-1);
+			printBuf("User",1,rcvbuf,len);
 
-			receiveMessage(s,rcvbuf,len);	// get the message length byte
+			receiveMessage(s,rcvbuf,1);	// get the message length byte
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len); // get the message name bytes
-			printBuf("Message", rcvbuf,len-1);
+			printBuf("Message", 1, rcvbuf,len-1);
 
 			break;
 		case 0x01 : // yo sum1 joined
-			receiveMessage(s,rcvbuf,len);
+			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len);
-			printf(" === User connected: ");
-			printBuf("Connected", rcvbuf,len);
+			printf("=== User connected: ");
+			printBuf("Connected", 0,rcvbuf,len); // accounts for the code and len
 			break;
 		case 0x02 :	// okbai
-			receiveMessage(s,rcvbuf,len);
+			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len);
-			printf(" === User disconnected: ");
-			printBuf("Connected", rcvbuf,len);
+			printf("=== User disconnected: ");
+			printBuf("Disconnected", 0,rcvbuf,len); // acounts for the code and len bytes
 			break;
 	}
 
@@ -158,15 +158,17 @@ int main(int argc, char *argv[]) {
 	for (i=1; i<=userlen; i++) {
 		sndbuf[i]=argv[3][i-1];
 	}
-	printBuf("send username", sndbuf,userlen);
+	printBuf("send username", 1, sndbuf,userlen);
 	sendMessage(s,sndbuf,userlen);
+	
+	printf("Joining the chat channel...\n");
 
 	// start loops
 
 	pid_t pid = fork();
 	if (pid < 0) exit(1);
 	if (pid==0) {
-			printf ("Forking for read channel...\n");
+			// printf ("Forking for read channel...\n");
 			// child process for reading
 			while (1) {
 
@@ -175,7 +177,7 @@ int main(int argc, char *argv[]) {
 			close(s);
 
 	} else {
-		printf("Joining the chat channel...\n");
+
 		// parent process for writing
 		while (1) {
 

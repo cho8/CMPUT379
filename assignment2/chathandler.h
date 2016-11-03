@@ -2,15 +2,20 @@
 #define DIST_H
 
 /*
-	Prepares the message by attaching length byte to the front of the message.
+	Prepares the message by attaching length byte numchar to the front of the message
+	at an offset index offs.
 	Package the message into the buffer position "offs" of the buffer.
 */
 void prepareMessage(unsigned char* sndbuf, int offs, unsigned char* message, unsigned int numchar) {
 	sndbuf[offs] = (unsigned char)numchar;
 
 	int i;
-	for (i=1+offs; i<=numchar; i++) {
+	for (i=1+offs; i<=numchar+offs; i++) {
 		sndbuf[i]=message[i-1];
+	}
+	printf("%x",sndbuf[0]);
+	for(int j=1; j<numchar+2; j++) {
+		printf("%c",sndbuf[j]);
 	}
  }
 
@@ -39,16 +44,18 @@ void sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
 	Print n bytes (plus length byte) of content in a buffer.
 	If 0 numchar, print the whole buf.
 */
-void printBuf(char* label, unsigned char* buf, unsigned int numchar) {
+void printBuf(char* label, int offs, unsigned char* buf, unsigned int numchar) {
 
-	printf("[%s] : ",label);
+	printf("[%s] : %d ",label, numchar);
 	if (numchar==0) {
 		printf("%s\n", buf);
 	} else {
 		// printf("%d", (unsigned int) buf[0]);
-		int i;
-		for (i=0; i<=numchar; i++) {
+		int i=offs;
+		while(i<(numchar+offs)) {
+			// printf("%d ",i);
 			printf("%c", (unsigned char) buf[i]);
+			i++;
 		} printf("\n");
 	}
 }

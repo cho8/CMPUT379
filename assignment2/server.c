@@ -19,7 +19,7 @@
 #include <netdb.h>
 #include "chathandler.h"
 
-#define MY_PORT 2222   // port we're listening on
+#define MY_PORT 2221   // port we're listening on
 
 void handleUserChat(int s, char *buf){
   // receive msg len
@@ -152,7 +152,7 @@ int main(void)
                                     for (i=1; i<=userlen; i++) {
                                       sndbuf[i]=userlist[j][i];
                                     }
-                                    printBuf("username len",sndbuf,userlen);
+                                    printBuf("send username",0,sndbuf,userlen);
                                     sendMessage(newfd, sndbuf, userlen);
 
                                   }
@@ -181,7 +181,7 @@ int main(void)
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
                                 if (j != listener ) {
-                                  printBuf("userlist",userlist[j],(unsigned int)userlist[j][0]);
+                                  printBuf("userlist",1,userlist[j],(unsigned int)userlist[j][0]);
                                 }
                             }
                         }
@@ -192,7 +192,6 @@ int main(void)
                             fdmax = newfd;
                         }
 
-                        // TODO
                         // ======== User Coonnected Broadcast ==========
                         // initialize status code
                         sndbuf[0]=0x01;
@@ -204,7 +203,8 @@ int main(void)
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
                                 if (j != listener && j != i ) {
-                                    sendMessage(j,sndbuf,len);
+                                    sendMessage(j,sndbuf,len+1); // account for extra code byte
+                                    // printf("PRINT SNDBUF %c, %d, %s\n",(unsigned char)sndbuf[0], (unsigned int)sndbuf[1],sndbuf);
                                 }
                             }
                         } // END send to everyone
@@ -224,17 +224,18 @@ int main(void)
                             printf("selectserver: socket %d hung up\n", i);
 
                             unsigned int len = (unsigned int)userlist[i][0];
-                            sndbuf[0]=0x01;
+                            // initialize status code
+                            sndbuf[0]=0x02;
                             // append the DC'd user
                             prepareMessage(sndbuf,1,userlist[newfd],len);
 
-                            // TODO
-                            // loop through and find the one that left
+                            // send to everyone
                             for(j = 0; j <= fdmax; j++) {
                                 if (FD_ISSET(j, &master)) {
                                     // except the listener and ourselves
-                                    if (j != listener ) {
-                                        sendMessage(j,sndbuf,len);
+                                    if (j != listener && j != i ) {
+                                        sendMessage(j,sndbuf,len+1); // account for extra code byte
+                                        // printf("PRINT SNDBUF %c, %d, %s\n",(unsigned char)sndbuf[0], (unsigned int)sndbuf[1],sndbuf);
                                     }
                                 }
                             } // END send to everyone
@@ -256,7 +257,7 @@ int main(void)
                         receiveMessage(i, buf, numchar);
 
                         // print to the server for debugging (-1 because no len byte)
-                        printBuf("rcv message",buf,numchar-1);
+                        printBuf("rcv message", 0, buf,numchar);
 
                         // prep message packageMessage
                         // snbuf[0] = 0x00;  // chat code
