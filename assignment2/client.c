@@ -3,8 +3,8 @@
     - from commandline: chat379 <hostname> <portnumber> <username>
     - handshake (connection -> receives hex -> responds username)
 		- clean up zombie children
-    - chat UI (chat, user status)
-    - chat message -- commandline input, then to server
+    - chat UI (chat, user status) [X]
+    - chat message -- commandline input, then to server [X]
     - keepalive [X]
     - receive server errors
 */
@@ -156,9 +156,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	//TODO send username
-	// if(send(s, argv[3], sizeof(handbuf), 0) == -1){
-	// 		perror("Username send failure");
-	// }
+	if(send(s, argv[3], sizeof(handbuf), 0) == -1){
+		perror("Username send failure");
+	}
 
 	start_t = time();
 
