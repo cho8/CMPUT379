@@ -20,13 +20,21 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include "chathandler.h"
+#include <signal.h>
 
 #define	 MY_PORT  21259
-#define  hostaddr "127.0.0.1"
 
-unsigned char CODE_MSG = 0X00;
-#define  CODE_ENT 0x01
-#define  CODE_EXT 0x02
+void sigchld_handler(int sig)
+{
+    pid_t p;
+    int status;
+
+    while ((p=waitpid(-1, &status, WNOHANG)) != -1)
+    {
+       /* Handle the death of pid p */
+			 exit(0);
+    }
+}
 
 void parseServerMessage(int s, unsigned char* rcvbuf) {
 	int len=0;
@@ -34,6 +42,7 @@ void parseServerMessage(int s, unsigned char* rcvbuf) {
 	unsigned char username[20];
 	nbytes = receiveMessage(s,rcvbuf,1);	// get the code
 
+	printf("%x ", rcvbuf[0]);
 	switch (rcvbuf[0]) {
 		case (unsigned char)0x00 :	// we a chat message
 
@@ -59,7 +68,7 @@ void parseServerMessage(int s, unsigned char* rcvbuf) {
 			receiveMessage(s,rcvbuf,len);
 			printBuf("Connected", 0,rcvbuf,len); // accounts for the code and len
 			break;
-		case 0x02 :	// okbai
+		case 0x02 :	// sum1 left
 			printf("\n=== User disconnected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
@@ -67,6 +76,13 @@ void parseServerMessage(int s, unsigned char* rcvbuf) {
 
 			printBuf("Disconnected", 0,rcvbuf,len); // acounts for the code and len bytes
 			break;
+		case 0x11 : // okbai
+			printf("\n=== Timed out\n");
+			receiveMessage(s,rcvbuf,1);
+			len=(unsigned int)rcvbuf[0];
+			receiveMessage(s,rcvbuf,len);
+			exit(0);
+
 	}
 
 
@@ -91,6 +107,13 @@ int main(int argc, char *argv[]) {
 
 	host = gethostbyname ("localhost");
   // connect to something outside of localhost
+
+	// handle child signal
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sigchld_handler;
+	sigaction(SIGCHLD, &sa, NULL);
 
 
 	if (argc != 4) {
@@ -201,6 +224,7 @@ int main(int argc, char *argv[]) {
 
 			prepareMessage(sndbuf, 0, ubuf, len);
 			sendMessage(s,sndbuf,len);
+
 		}
 		// close the child reading process
 		kill(pid, SIGTERM);
