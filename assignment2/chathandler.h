@@ -17,43 +17,65 @@ void prepareMessage(unsigned char* sndbuf, int offs, unsigned char* message, uns
 
 /*
 	Server method.
-	Helper method to append user info to message package at an offs index.
-	User info consists of len byte and username string
+	Helper method to append message fragmentto message package at an offs index.
+	Frag info consists of len byte in first index and username string
+	returns total length of message
 */
-void appendUser(unsigned char* sndbuf, int offs, unsigned char* username) {
-	unsigned int numchar = (unsigned int)username[0];
+int appendFrag(unsigned char* sndbuf, int offs, unsigned int len, unsigned char* username) {
 	int i;
-	for (i=0; i<=numchar; i++) {
+	for (i=0; i<=len; i++) {
 		sndbuf[i+offs]=username[i];
 	}
-	printf("USER APPEND ");
-	printf("%x",sndbuf[0]);
-	printf("%d",(unsigned int)sndbuf[1]);
-	for (i=2; i<numchar+2; i++){
-		printf("%c", sndbuf[i]);
-	} printf("\n");
+	// printf("USER APPEND ");
+	// printf("%x",sndbuf[0]);
+	// printf("%d",(unsigned int)sndbuf[1]);
+	// for (i=2; i<numchar+2; i++){
+	// 	printf("%c", sndbuf[i]);
+	// } printf("\n");
+	return(len+offs);
 }
 
 
 /*
 	Wrapper for receiving nbytes from socket
 */
-void receiveMessage(int socket, unsigned char* rcvbuf, unsigned int numchar) {
+unsigned int receiveMessage(int socket, unsigned char* rcvbuf, unsigned int numchar) {
 	unsigned int nbytes = 0;
 	while (nbytes<numchar) {
-		nbytes+=recv(socket, rcvbuf, sizeof(unsigned char)*numchar, 0);
+		nbytes+=recv(socket, rcvbuf+nbytes, sizeof(unsigned char)*numchar, 0);
 	}
+	rcvbuf[nbytes]='\0';
+	return nbytes;
 }
 
 /*
 	Wrapper for sending nbytes (plus length byte) to socket
 */
-void sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
+unsigned int sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
 	unsigned int nbytes = 0;
 	while(nbytes<numchar) {
-		nbytes += send(socket, sndbuf, sizeof(unsigned char)*(numchar+1), 0); //+1 to account for length byte
+		nbytes += send(socket, sndbuf+nbytes, sizeof(unsigned char)*(numchar+1), 0); //+1 to account for length byte
 	}
+	return nbytes;
 }
+
+
+/* Print chat */
+void printChat(unsigned char* username, unsigned int userlen, unsigned char* buf, unsigned int numchar) {
+	int i;
+	for(i=0; i<userlen; i++){
+		// printf("%d ",i);
+		printf("%c", (unsigned char) username[i]);
+		i++;
+	} printf("\n");
+	printf(" : ");
+	for(i=0; i<numchar; ) {
+		// printf("%d ",i);
+		printf("%c", (unsigned char) buf[i]);
+		i++;
+	} printf("\n");
+}
+
 
 /*
 	Print n bytes (plus length byte) of content in a buffer.
@@ -61,7 +83,7 @@ void sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
 */
 void printBuf(char* label, int offs, unsigned char* buf, unsigned int numchar) {
 
-	printf("[%s] : ",label);
+	printf("[%s] : %d ",label, numchar);
 	if (numchar==0) {
 		printf("%s\n", buf);
 	} else {

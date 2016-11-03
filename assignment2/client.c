@@ -1,6 +1,6 @@
 /*
   TODO:
-    - from commandline: chat379 <hostname> <portnumber> <username>
+    X from commandline: chat379 <hostname> <portnumber> <username>
     X handshake (connection -> receives hex -> responds username)
 		- clean up zombie children
     - chat UI (chat, user status)
@@ -21,7 +21,7 @@
 #include <arpa/inet.h>
 #include "chathandler.h"
 
-#define	 MY_PORT  21252
+#define	 MY_PORT  21259
 #define  hostaddr "127.0.0.1"
 
 unsigned char CODE_MSG = 0X00;
@@ -29,38 +29,38 @@ unsigned char CODE_MSG = 0X00;
 #define  CODE_EXT 0x02
 
 void parseServerMessage(int s, unsigned char* rcvbuf) {
-	int len=1;
+	int len=0;
+	unsigned int nbytes;						//bytes read
 	unsigned char username[20];
-	receiveMessage(s,rcvbuf,1);	// get the code
-	printf("%x ", (unsigned char )rcvbuf[0]);
-	switch ((unsigned int)rcvbuf[0]) {
+	nbytes = receiveMessage(s,rcvbuf,1);	// get the code
+
+	switch (rcvbuf[0]) {
 		case (unsigned char)0x00 :	// we a chat message
-			printf(" Received message: ");
-			// receiveMessage(s,rcvbuf,1);	// get the user length byte
-			// len=(unsigned int)rcvbuf[0];
-			// printf( "len %d \n", len);
-			// // receiveMessage(s,rcvbuf,len); // get the user name bytes
+
+			nbytes = receiveMessage(s,rcvbuf,1);	// get the user length byte
+			len=(unsigned int)rcvbuf[0];
+
+			receiveMessage(s,rcvbuf,len); // get the user name bytes
 			// printBuf("User",0,rcvbuf,len);
-			//
-			// receiveMessage(s,rcvbuf,1);	// get the message length byte
-			// len=(unsigned int)rcvbuf[0];
-			// receiveMessage(s,rcvbuf,len); // get the message name bytes
-			// printBuf("Message", 1, rcvbuf,len-1);
+			printf("%s : ",rcvbuf);
+			receiveMessage(s,rcvbuf,1);	// get the message length byte
+			len=(unsigned int)rcvbuf[0];
+
+			receiveMessage(s,rcvbuf,len+1); // get the message name bytes
+			// printBuf("Message", 0, rcvbuf,len);
+			printf("%s\n", rcvbuf);
 
 			break;
 		case 0x01 : // yo sum1 joined
-			printf("=== User connected: ");
+			printf("\n=== User connected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
-			// unsigned int nbytes = 0;
-			// while (nbytes<len) {
-			// 	nbytes+=recv(s, rcvbuf, sizeof(unsigned char)*len, 0);
-			// }
+
 			receiveMessage(s,rcvbuf,len);
 			printBuf("Connected", 0,rcvbuf,len); // accounts for the code and len
 			break;
 		case 0x02 :	// okbai
-			printf("=== User disconnected: ");
+			printf("\n=== User disconnected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len);
@@ -113,9 +113,9 @@ int main(int argc, char *argv[]) {
 	// bzero (&server, sizeof (server)); // set everything to zero byte-to-byte
 	// bcopy (host->h_addr, & (server.sin_addr), host->h_length); // copy stuff form server
 
-	server.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server.sin_addr.s_addr = inet_addr(argv[1]);
 	server.sin_family = host->h_addrtype;
-	server.sin_port = htons (MY_PORT);
+	server.sin_port = htons (atoi(argv[2]));
 
 	if (connect (s, (struct sockaddr*) & server, sizeof (server))) {
 		perror ("Client: cannot connect to server");
@@ -190,6 +190,7 @@ int main(int argc, char *argv[]) {
 		while (1) {
 
 			unsigned char ubuf[BUFSIZE];
+
 			fgets(buf,BUFSIZE-1,stdin);
 			strncpy((char*)ubuf, buf, 512);	// signed to unsigned char*
 

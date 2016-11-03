@@ -1,11 +1,11 @@
 /*
   TODO:
-    - from commandline: server379 portnumber
+    X from commandline: server379 portnumber
     - make daemon
-    - handshake (receive connection -> send hex -> receive username)
+    X handshake (receive connection -> send hex -> receive username)
     - handle multiple client inputs
     - chat UI (broadcast chat, update user status, communication errors)
-    - logfile sever379procid.log
+    - logfile server379procid.log
 */
 
 #include <stdio.h>
@@ -14,12 +14,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/timeb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "chathandler.h"
 
-#define MY_PORT 21252    // port we're listening on
+#define MY_PORT 21259    // port we're listening on
 
 void handleUserChat(int s, char *buf){
   // receive msg len
@@ -37,7 +38,7 @@ void handleUserDC(){};
 void handleUserCon(){};
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
     fd_set master;    // master file descriptor list
     fd_set read_fds;  // temp file descriptor list for select()
@@ -50,12 +51,15 @@ int main(void)
     socklen_t addrlen;
 
     int BUFSIZE = 512;
+    int NUMUSERS = 50;
+    int USERNAME_MAX = 20;
     unsigned char buf[BUFSIZE];    // buffer for client data
     unsigned char sndbuf[BUFSIZE]; // buffer for received data
     unsigned int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
     unsigned int n_users=0;
-    unsigned char userlist[50][20];           //50 users, 20 in length
+    unsigned char userlist[NUMUSERS][USERNAME_MAX];           //50 users, 20 in length
+
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j;
@@ -65,11 +69,16 @@ int main(void)
 
     listener = socket(AF_INET, SOCK_STREAM, 0);
 
+    if (argc != 2) {
+      printf("Usage: %s <portnumber> \n", argv[0]);
+      exit (0);
+    }
+
     // get us a socket and bind it
     memset(&sa, 0, sizeof sa);
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = inet_addr("127.0.0.1");
-    sa.sin_port = htons(MY_PORT);
+    sa.sin_port = htons(atoi(argv[1]));
 
     if (bind(listener, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
         perror("bind");
@@ -196,7 +205,7 @@ int main(void)
                         // initialize status code
                         sndbuf[0]=0x01;
 
-                        appendUser(sndbuf, 1, userlist[newfd]);
+                        appendFrag(sndbuf, 1, (unsigned int)userlist[newfd][0], userlist[newfd]);
 
 
                         // send to everyone
@@ -227,7 +236,7 @@ int main(void)
                             printf("len %d\n",len);
                             // initialize status code
                             sndbuf[0]=0x02;
-                            appendUser(sndbuf, 1, userlist[i]);
+                            appendFrag(sndbuf, 1, (unsigned int)userlist[i][0], userlist[i]);
 
 
                             // send to everyone
@@ -265,35 +274,53 @@ int main(void)
                     } else {
                         // we got some message from a client
 
-                        // get the len of message
-                        unsigned int numchar = (unsigned int) buf[0];
-                        printf("Got: %d\n", numchar);
-
-                        // get the message string
-                        receiveMessage(i, buf, numchar);
-
-                        // print to the server for debugging (-1 because no len byte)
-                        printBuf("rcv message", 0, buf,numchar);
+                        // pid_t pid = fork();
+                        // if (pid < 0) exit(1);
+                        // if ( pid==0 ) { // send to everyone in child
 
                         // prep message
                         sndbuf[0] = 0x00;  // chat code
-                        unsigned int len = (unsigned int) userlist[i][0];
-                        prepareMessage(sndbuf,1,userlist[i],len);
-                        // prepareMessage(sndbuf,2+len,buf,numchar);
-                        // send to everyone
-                        for(j = 0; j <= fdmax; j++) {
-                            if (FD_ISSET(j, &master)) {
-                                // except the listener and ourselves
-                                if (j != listener && j != i ) {
-                                    if (send(j, sndbuf, sizeof(unsigned char), 0) == -1) {
-                                        perror("send");
-                                    }
-                                }
-                            }
-                        } // END send to everyone
+                        unsigned int len = (unsigned int)userlist[i][0]; // length of user
+                        len = appendFrag(sndbuf, 1, len, userlist[i]); // attach user
 
-                    }
+                        unsigned int numchar = (unsigned int) buf[0];
+                        len = appendFrag(sndbuf,len+1, 1, buf);       // attach message length
+                        receiveMessage(i, buf, numchar);
+                        len = appendFrag(sndbuf, len, numchar, buf);  // attach message
+
+
+
+                          //
+                          // // print to the server for debugging (-1 because no len byte)
+                          // printBuf("rcv message", 0, buf,numchar);
+
+
+
+
+                          printf("SOME LEN %d\n",len);
+
+
+                          // printf("%c\n", sndbuf[9]);
+
+                          // prepareMessage(sndbuf,len,buf,numchar);
+                          printBuf("Send message", 0, sndbuf, len);
+
+                          // send to everyone
+                          for(j = 0; j <= fdmax; j++) {
+                              if (FD_ISSET(j, &master)) {
+                                  // except the listener and ourselves
+                                  if (j != listener && j != i ) {
+
+                                      sendMessage(j, sndbuf, len);
+
+                                  }
+                              }
+                          } // END send to everyone
+                          // exit(0);
+                       }
+                    // } // Child
                 } // END handle data from client
+
             } // END got new incoming connection
         } // END looping through file descriptors
     } // END while
