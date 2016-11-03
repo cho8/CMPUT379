@@ -21,7 +21,7 @@
 #include <arpa/inet.h>
 #include "chathandler.h"
 
-#define	 MY_PORT  2221
+#define	 MY_PORT  21252
 #define  hostaddr "127.0.0.1"
 
 unsigned char CODE_MSG = 0X00;
@@ -30,33 +30,41 @@ unsigned char CODE_MSG = 0X00;
 
 void parseServerMessage(int s, unsigned char* rcvbuf) {
 	int len=1;
+	unsigned char username[20];
 	receiveMessage(s,rcvbuf,1);	// get the code
-	switch (rcvbuf[0]) {
-		case 0x00 :	// we a chat message
-
-			receiveMessage(s,rcvbuf,1);	// get the user length byte
-			len=(unsigned int)rcvbuf[0];
-			receiveMessage(s,rcvbuf,len); // get the user name bytes
-			printBuf("User",1,rcvbuf,len);
-
-			receiveMessage(s,rcvbuf,1);	// get the message length byte
-			len=(unsigned int)rcvbuf[0];
-			receiveMessage(s,rcvbuf,len); // get the message name bytes
-			printBuf("Message", 1, rcvbuf,len-1);
+	printf("%x ", (unsigned char )rcvbuf[0]);
+	switch ((unsigned int)rcvbuf[0]) {
+		case (unsigned char)0x00 :	// we a chat message
+			printf(" Received message: ");
+			// receiveMessage(s,rcvbuf,1);	// get the user length byte
+			// len=(unsigned int)rcvbuf[0];
+			// printf( "len %d \n", len);
+			// // receiveMessage(s,rcvbuf,len); // get the user name bytes
+			// printBuf("User",0,rcvbuf,len);
+			//
+			// receiveMessage(s,rcvbuf,1);	// get the message length byte
+			// len=(unsigned int)rcvbuf[0];
+			// receiveMessage(s,rcvbuf,len); // get the message name bytes
+			// printBuf("Message", 1, rcvbuf,len-1);
 
 			break;
 		case 0x01 : // yo sum1 joined
+			printf("=== User connected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
+			// unsigned int nbytes = 0;
+			// while (nbytes<len) {
+			// 	nbytes+=recv(s, rcvbuf, sizeof(unsigned char)*len, 0);
+			// }
 			receiveMessage(s,rcvbuf,len);
-			printf("=== User connected: ");
 			printBuf("Connected", 0,rcvbuf,len); // accounts for the code and len
 			break;
 		case 0x02 :	// okbai
+			printf("=== User disconnected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len);
-			printf("=== User disconnected: ");
+
 			printBuf("Disconnected", 0,rcvbuf,len); // acounts for the code and len bytes
 			break;
 	}
@@ -160,7 +168,7 @@ int main(int argc, char *argv[]) {
 	}
 	printBuf("send username", 1, sndbuf,userlen);
 	sendMessage(s,sndbuf,userlen);
-	
+
 	printf("Joining the chat channel...\n");
 
 	// start loops

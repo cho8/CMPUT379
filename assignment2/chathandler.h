@@ -11,13 +11,29 @@ void prepareMessage(unsigned char* sndbuf, int offs, unsigned char* message, uns
 
 	int i;
 	for (i=1+offs; i<=numchar+offs; i++) {
-		sndbuf[i]=message[i-1];
-	}
-	printf("%x",sndbuf[0]);
-	for(int j=1; j<numchar+2; j++) {
-		printf("%c",sndbuf[j]);
+		sndbuf[i]=message[i-1-offs];
 	}
  }
+
+/*
+	Server method.
+	Helper method to append user info to message package at an offs index.
+	User info consists of len byte and username string
+*/
+void appendUser(unsigned char* sndbuf, int offs, unsigned char* username) {
+	unsigned int numchar = (unsigned int)username[0];
+	int i;
+	for (i=0; i<=numchar; i++) {
+		sndbuf[i+offs]=username[i];
+	}
+	printf("USER APPEND ");
+	printf("%x",sndbuf[0]);
+	printf("%d",(unsigned int)sndbuf[1]);
+	for (i=2; i<numchar+2; i++){
+		printf("%c", sndbuf[i]);
+	} printf("\n");
+}
+
 
 /*
 	Wrapper for receiving nbytes from socket
@@ -26,7 +42,6 @@ void receiveMessage(int socket, unsigned char* rcvbuf, unsigned int numchar) {
 	unsigned int nbytes = 0;
 	while (nbytes<numchar) {
 		nbytes+=recv(socket, rcvbuf, sizeof(unsigned char)*numchar, 0);
-		// printf(" rcvbuf: %s\n", rcvbuf);
 	}
 }
 
@@ -46,7 +61,7 @@ void sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
 */
 void printBuf(char* label, int offs, unsigned char* buf, unsigned int numchar) {
 
-	printf("[%s] : %d ",label, numchar);
+	printf("[%s] : ",label);
 	if (numchar==0) {
 		printf("%s\n", buf);
 	} else {

@@ -19,7 +19,7 @@
 #include <netdb.h>
 #include "chathandler.h"
 
-#define MY_PORT 2221   // port we're listening on
+#define MY_PORT 21252    // port we're listening on
 
 void handleUserChat(int s, char *buf){
   // receive msg len
@@ -55,7 +55,6 @@ int main(void)
     unsigned int nbytes;
     unsigned char handbuf[2] = {0xCF, 0xA7};  // handshake bytes
     unsigned int n_users=0;
-    unsigned int fd_offset=0;
     unsigned char userlist[50][20];           //50 users, 20 in length
 
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
@@ -88,7 +87,6 @@ int main(void)
 
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
-    fd_offset = fdmax-n_users;  //get offset for array indexing purposes
 
 
     // TODO fork for reading??
@@ -176,33 +174,36 @@ int main(void)
 
                         printf("New user: %s\n", userlist[newfd]);
 
-                        // Print out current user list for funsies
-                        for(j = 0; j <= fdmax; j++) {
-                            if (FD_ISSET(j, &master)) {
-                                // except the listener and ourselves
-                                if (j != listener ) {
-                                  printBuf("userlist",1,userlist[j],(unsigned int)userlist[j][0]);
-                                }
-                            }
-                        }
-                        // ====================
-
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
 
+                        // Print out current user list for funsies
+                        for(j = 0; j <= fdmax; j++) {
+                            if (FD_ISSET(j, &master)) {
+                                // except the listener
+                                if (j != listener ) {
+                                  if (userlist[j][0]!=0) {
+                                    printBuf("userlist +1",1,userlist[j],(unsigned int)userlist[j][0]);
+                                  }
+                                }
+                            }
+                        }
+                        // ===========================
+
                         // ======== User Coonnected Broadcast ==========
                         // initialize status code
                         sndbuf[0]=0x01;
-                        // append the DC'd user
-                        prepareMessage(sndbuf,1,userlist[newfd],len);
+
+                        appendUser(sndbuf, 1, userlist[newfd]);
+
 
                         // send to everyone
                         for(j = 0; j <= fdmax; j++) {
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
-                                if (j != listener && j != i ) {
+                                if (j != listener && j != i && j!=newfd ) {
                                     sendMessage(j,sndbuf,len+1); // account for extra code byte
                                     // printf("PRINT SNDBUF %c, %d, %s\n",(unsigned char)sndbuf[0], (unsigned int)sndbuf[1],sndbuf);
                                 }
@@ -222,23 +223,38 @@ int main(void)
                         if (nbytes == 0) {
                             // ====== User Disconnected  =======
                             printf("selectserver: socket %d hung up\n", i);
-
                             unsigned int len = (unsigned int)userlist[i][0];
+                            printf("len %d\n",len);
                             // initialize status code
                             sndbuf[0]=0x02;
-                            // append the DC'd user
-                            prepareMessage(sndbuf,1,userlist[newfd],len);
+                            appendUser(sndbuf, 1, userlist[i]);
+
 
                             // send to everyone
                             for(j = 0; j <= fdmax; j++) {
                                 if (FD_ISSET(j, &master)) {
                                     // except the listener and ourselves
                                     if (j != listener && j != i ) {
+
                                         sendMessage(j,sndbuf,len+1); // account for extra code byte
                                         // printf("PRINT SNDBUF %c, %d, %s\n",(unsigned char)sndbuf[0], (unsigned int)sndbuf[1],sndbuf);
                                     }
                                 }
                             } // END send to everyone
+
+                            // remove user from list
+                            userlist[i][0] = 0;
+                            // Print out current user list for funsies
+                            for(j = 0; j <= fdmax; j++) {
+                                if (FD_ISSET(j, &master)) {
+                                    // except the listener
+                                    if (j != listener ) {
+                                      if (userlist[j][0]!=0) {
+                                        printBuf("userlist -1",1,userlist[j],(unsigned int)userlist[j][0]);
+                                      }
+                                    }
+                                }
+                            }
 
                         } else {
                             perror("recv");
@@ -259,16 +275,17 @@ int main(void)
                         // print to the server for debugging (-1 because no len byte)
                         printBuf("rcv message", 0, buf,numchar);
 
-                        // prep message packageMessage
-                        // snbuf[0] = 0x00;  // chat code
-
-
+                        // prep message
+                        sndbuf[0] = 0x00;  // chat code
+                        unsigned int len = (unsigned int) userlist[i][0];
+                        prepareMessage(sndbuf,1,userlist[i],len);
+                        // prepareMessage(sndbuf,2+len,buf,numchar);
                         // send to everyone
                         for(j = 0; j <= fdmax; j++) {
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
                                 if (j != listener && j != i ) {
-                                    if (send(j, buf, nbytes, 0) == -1) {
+                                    if (send(j, sndbuf, sizeof(unsigned char), 0) == -1) {
                                         perror("send");
                                     }
                                 }
