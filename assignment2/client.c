@@ -5,7 +5,7 @@
 		- clean up zombie children
     - chat UI (chat, user status)
     - chat message -- commandline input, then to server
-    - keepalive
+    - keepalive [X]
     - receive server errors
 */
 
@@ -52,25 +52,21 @@ void packageMessage(int s, unsigned char* sndbuf, char* message, char* username)
 
 
 
-void parseMessage(char* rcvbuf, char* buf) {		// parse nessages sent by server
+void parseMessage(char* rcvbuf, char* buf) {		// parse user update messages sent by server
 	
 	int length;
-	char * msg_start;
 
 	buf = strtok(rcvbuf, " ");
-	msg_start = strtok(rcvbuf, "");
-	length = (int) msg_start
+	length = (int) trtok(rcvbuf, " ");
 
-	if(strncmp(buf, "0x00", 4) == 0){	//chat message
-		
+	if(strncmp(buf, "0x01", 4) == 0){
+		buf = strtok(rcvbuf, " ");
+		printf("User %.*rcvbuf has joined the chat.\n", length, buf);
 	}
 
-	if(strncmp(buf, "0x01") == 0){
-		printf("User %.*rcvbuf has joined the chat.\n", length, rcvbuf);
-	}
-
-	if(strncmp(buf, "0x02") == 0){
-		printf("User %.*rcvbuf has left the chat.\n", length, rcvbuf);
+	if(strncmp(buf, "0x02", 4) == 0){
+		buf = strtok(rcvbuf, " ");
+		printf("User %.*rcvbuf has left the chat.\n", length, buf);
 	}
 }
 
@@ -174,7 +170,17 @@ int main(int argc, char *argv[]) {
 			while (1) {
 
 				recv(s, rcvbuf, sizeof(rcvbuf), 0);
-				parseMessage(rcvbuf, buf);
+
+				if(strncmp(rcvbuf, "0x00", 4) != 0){
+					parseMessage(rcvbuf, buf);
+				} else {					
+					buf = strtok(rcvbuf, " ");	//buf = "0x00"
+					buf = strtok(rcvbuf, " ");	//buf has username length
+					printf("%.*rcvbuf :", (int) buf, buf + sizeof(unsigned int) + sizeof(" "));
+
+					buf = buf + (int) buf;
+					printf("%.*rcvbuf \n", (int) buf, buf + sizeof(unsigned int) + sizeof(" "));
+				}
 
 			}
 			close(s);
