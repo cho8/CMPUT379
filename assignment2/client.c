@@ -19,6 +19,8 @@
 #include <arpa/inet.h>
 #include <sys/timeb.h>
 
+
+
 #include "chathandler.h"
 
 #define STDIN 0
@@ -31,13 +33,13 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
 	nbytes = receiveMessage(s,rcvbuf,1);	// get the code
 
 	switch (rcvbuf[0]) {
-		case (unsigned char)0x00 :	// we a chat message
+		case 0x00 :	// we a chat message
 
 			nbytes = receiveMessage(s,rcvbuf,1);	// get the user length byte
 			len=(unsigned int)rcvbuf[0];
 
 			receiveMessage(s,rcvbuf,len); // get the user name bytes
-			printf("%s : ",rcvbuf);
+			printf("[%s]: ",rcvbuf);
 			receiveMessage(s,rcvbuf,1);	// get the message length byte
 			len=(unsigned int)rcvbuf[0];
 
@@ -45,7 +47,7 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
 			printf("%s\n", rcvbuf);
 			break;
 
-		case 0x01 : // yo sum1 joined
+		case 0x01 :
 			printf("\n=== User connected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
@@ -54,7 +56,7 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
 			printf("%s ===\n",rcvbuf); // accounts for the code and len
 			break;
 
-		case 0x02 :	// sum1 left
+		case 0x02 :
 			printf("\n=== User disconnected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
@@ -68,8 +70,9 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
  }
 
 int main(int argc, char *argv[]) {
-	int	s;											//sock
+	int	s, n;										//sock
 	int fdmax;									//max file descriptors
+	char c;									//peek buf
 	unsigned int n_users; 			//number of users
 	unsigned int nbytes;				//num bytes sent/received
 
@@ -172,7 +175,7 @@ int main(int argc, char *argv[]) {
 		perror("send username");
 	}
 
-	printf("\nJoined the chat channel as [%s]...\n",argv[3]);
+	printf("\n=== Joined the chat channel as [%s]\n",argv[3]);
 
 	// start loop
 	while (1) {
@@ -180,9 +183,22 @@ int main(int argc, char *argv[]) {
 		FD_CLR(s, &readfds);
     FD_SET(s, &readfds);
     FD_SET(STDIN, &readfds);
-    if (select(fdmax+1, &readfds, NULL, NULL, &tv)==0) {
 
-			// client has been idle. Send a keepalive.
+		n = select(fdmax+1, &readfds, NULL, NULL, &tv);
+
+		// peek to see if socket still open
+		ssize_t x = recv(s, &c, 1, MSG_PEEK | MSG_DONTWAIT);
+		if(x == 0) {
+			close(s);
+			close(STDIN);
+			printf("\n=== Connection closed on serverside :(\n");
+			exit(0);
+		}
+
+		// select found nothing in 30 seconds
+		// client has been idle. Send a keepalive.
+    if (n==0) {
+
 			sndbuf[0]=0x00;
 			sndbuf[1]=0;
 			if (sendMessage(s,sndbuf,1)==-1) {
@@ -191,6 +207,8 @@ int main(int argc, char *argv[]) {
 			struct timeval tv={.tv_sec=TIMEOUT,.tv_usec=0};
 			continue;
 		}
+
+		// Peek at the socket and see if it's still open
 
 		if (FD_ISSET(STDIN, &readfds)) {
 			// there's some keyboard input

@@ -1,11 +1,11 @@
 /*
   TODO:
     X from commandline: server379 portnumber
-    - make daemon
+    X make daemon
     X handshake (receive connection -> send hex -> receive username)
     X handle multiple client inputs
     X chat UI (broadcast chat, update user status, communication errors)
-    - logfile server379procid.log
+    X logfile server379procid.log
 */
 
 #include <stdio.h>
@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/timeb.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -23,12 +24,33 @@
 
 #include "chathandler.h"
 
-FILE *fp=NULL;
-struct sigaction sigint_act, old_act;
+int fdmax;        // maximum file descriptor number
+int listener;     // listening socket descriptor
+fd_set master;    // master file descriptor list
 
-void sigint_handler(int signo){
-	printf("SIGINT received. Server closing\n");
-  sigaction(SIGINT, &sigint_act, &old_act);
+FILE *fp=NULL;
+struct sigaction sigint_act, oldint_act;
+struct sigaction sigkill_act, oldkill_act;
+
+void sigterm_handler(int signo){
+	printf("SIGTERM received. Server closing\n");
+  sigaction(SIGTERM, &sigkill_act, &oldkill_act);
+
+  // close the sockets
+  int j;
+  for(j = 0; j <= fdmax; j++) {
+      if (FD_ISSET(j, &master)) {
+          // except the listener
+          if (j != listener ) {
+            // prepare the username and send it off
+            close(j);
+            FD_CLR(j, &master); // remove from master set
+
+          }
+      }
+  } // END send to everyone
+  printf("Connections closed.\n");
+
 	fclose(fp);
 	exit(0);
 }
@@ -60,12 +82,10 @@ int broadcastStatus (unsigned char code, int i, int newfds, unsigned char userli
 
 int main(int argc, char *argv[])
 {
-    fd_set master;    // master file descriptor list
-    fd_set read_fds;  // temp file descriptor list for select()
-    int fdmax;        // maximum file descriptor number
 
-    int listener;     // listening socket descriptor
+    fd_set read_fds;  // temp file descriptor list for select()
     int newfd;        // newly accept()ed socket descriptor
+
     struct sockaddr_in sa;
     struct sockaddr_in remoteaddr; // client address
     socklen_t addrlen;
@@ -86,14 +106,38 @@ int main(int argc, char *argv[])
     int yes=1;        // for setsockopt() SO_REUSEADDR, below
     int i, j;
 
-    pid_t pid = getpid();
-    pid_t sid
-    printf("%d\n",pid);
+    // creating daemon process
+    pid_t pid = 0;
+    pid_t sid = 0;
+    pid = fork();
+
+    if (pid <0) {
+      printf("[Error] Server failed to create daemon process.\n");
+      exit(1);
+    }
+
+    if (pid > 0) {
+      // in the parent
+      printf("[PID] Daemon process %d \n", pid);
+      exit(0);
+    }
+
+    umask(0);
+
+    // don't look like an orphan!
+    sid = setsid();
+    if(sid < 0) {
+    	fprintf(fp, "cannot create new process group");
+      exit(1);
+    }
+
+    pid=getpid();
+
     char logbuf[128];
     sprintf(logbuf, "server379%d.log", pid);
     fp = fopen (logbuf, "w+");
     if(!fp){
-      printf("cannot open log file");
+      printf("[Error] Cannot open log file");
     }
 
     FD_ZERO(&master);    // clear the master and temp sets
@@ -106,13 +150,12 @@ int main(int argc, char *argv[])
       exit (0);
     }
 
-    //Setting up signal handler for SIGINT
-  	struct sigaction sigint_act, old_act;
-  	sigint_act.sa_handler = sigint_handler;
-  	sigemptyset(&sigint_act.sa_mask);
-    sigint_act.sa_flags = 0;
+    //Setting up signal handler for killing daemon
+    sigkill_act.sa_handler = sigterm_handler;
+    sigemptyset(&sigkill_act.sa_mask);
+    sigkill_act.sa_flags = 0;
 
-  	sigaction(SIGINT, &sigint_act, &old_act);
+    sigaction(SIGTERM, &sigkill_act, &oldkill_act);
 
 
     // get us a socket and bind it
@@ -124,13 +167,13 @@ int main(int argc, char *argv[])
     if (bind(listener, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
       fprintf(fp, "[Error] Bind : %s\n",strerror(errno));
       perror("[Error] bind");
-    	exit(-1);
+    	exit(1);
     }
 
     // listen
     if (listen(listener, 10) == -1) {
         fprintf(fp, "[Error] Listener : %s\n",strerror(errno));
-        exit(-1);
+        exit(1);
     }
 
     // add the listener to the master set
@@ -146,7 +189,7 @@ int main(int argc, char *argv[])
         read_fds = master; // copy it
         if (select(fdmax+1, &read_fds, NULL, NULL, 0) == -1) {
             fprintf(fp, "[Error] Select : %s\n",strerror(errno));
-            exit(-1);
+            exit(1);
         }
 
 
@@ -265,12 +308,6 @@ int main(int argc, char *argv[])
                           // timeout threshold exceeded!
                           fprintf(fp, "[Connect] : socket %d timed out\n", i);
                           broadcastStatus (0x02, i, i, userlist[i], sndbuf, master, listener, fdmax);
-
-                          // tell it to close itself
-                          // sndbuf[0] = (unsigned char) 0x11;
-                          // if (sendMessage(i,sndbuf,1)==-1) { // account for extra code byte
-                          //   perror("DC notify close");
-                          // }
 
                           // remove user from list
                           close(i);
