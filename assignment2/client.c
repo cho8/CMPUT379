@@ -2,11 +2,9 @@
   TODO:
     X from commandline: chat379 <hostname> <portnumber> <username>
     X handshake (connection -> receives hex -> responds username)
-		- clean up zombie children
     - chat UI (chat, user status)
     X chat message -- commandline input, then to server
     - keepalive
-    - receive server errors
 */
 
 
@@ -19,21 +17,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/timeb.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
 #include "chathandler.h"
-#include <signal.h>
 
 #define STDIN 0
+#define TIMEOUT 10
 
 
 int parseServerMessage(int s, unsigned char* rcvbuf) {
 	int len=0;
 	unsigned int nbytes;						//bytes read
-	unsigned char username[20];
 
 	int exitcode=0;
 	nbytes = receiveMessage(s,rcvbuf,1);	// get the code
 
-	printf("%x ", rcvbuf[0]);
 	switch (rcvbuf[0]) {
 		case (unsigned char)0x00 :	// we a chat message
 
@@ -41,32 +41,32 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
 			len=(unsigned int)rcvbuf[0];
 
 			receiveMessage(s,rcvbuf,len); // get the user name bytes
-			// printBuf("User",0,rcvbuf,len);
 			printf("%s : ",rcvbuf);
 			receiveMessage(s,rcvbuf,1);	// get the message length byte
 			len=(unsigned int)rcvbuf[0];
 
 			receiveMessage(s,rcvbuf,len+1); // get the message name bytes
-			// printBuf("Message", 0, rcvbuf,len);
 			printf("%s\n", rcvbuf);
-
 			break;
+
 		case 0x01 : // yo sum1 joined
 			printf("\n=== User connected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
 
 			receiveMessage(s,rcvbuf,len);
-			printBuf("Connected", 0,rcvbuf,len); // accounts for the code and len
+			printf("%s ===\n",rcvbuf); // accounts for the code and len
 			break;
+
 		case 0x02 :	// sum1 left
 			printf("\n=== User disconnected: ");
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
-			receiveMessage(s,rcvbuf,len);
 
-			printBuf("Disconnected", 0,rcvbuf,len); // acounts for the code and len bytes
+			receiveMessage(s,rcvbuf,len);
+			printf("%s ===\n",rcvbuf); // accounts for the code and len
 			break;
+
 		case 0x11 : // okbai
 			printf("\n=== Timed out\n");
 			exitcode=-1;
@@ -78,10 +78,18 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
 
 int main(int argc, char *argv[]) {
 	int	s;											//sock
-	int e;											//exit
 	int fdmax;									//max file descriptors
 	unsigned int n_users; 			//number of users
 	unsigned int nbytes;				//num bytes sent/received
+
+	struct timeb current;
+	int ShmID = shmget(IPC_PRIVATE, sizeof(struct timeb), IPC_CREAT | 0666);
+	if (ShmID < 0) {
+  	printf("*** shmget error (server) ***\n");
+    exit(1);
+  }
+	struct timeb * timeout = (struct timeb *) shmat(ShmID, NULL, 0);
+ 	printf("Server has attached the shared memory...\n");
 
 	int BUFSIZE = 512;
 	char buf[BUFSIZE];												// buffer for getting input
@@ -147,15 +155,14 @@ int main(int argc, char *argv[]) {
 		perror ("Client: failed recieve handshake");
 		exit(1);
 	}
-	printf("Received handshake\n");
+	printf("=== Connecting to server... \n");
 
 	// ==== Get number of users
 	receiveMessage(s, rcvbuf, 1);
 	n_users=(unsigned int)rcvbuf[0];
 
-	printf("%d users connected.\n", n_users);
+	printf("=== %d users connected.\n", n_users);
 	if (n_users>0) {
-		printf("Receiving userlist\n");
 		for (int i=0; i<n_users; i++) {
 			receiveMessage(s, rcvbuf, 1);
 			unsigned int len = (unsigned int)rcvbuf[0];
@@ -164,58 +171,81 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	//TODO ==== Send user name =====
+	// ==== Send user name =====
 	unsigned int userlen = strlen(argv[3]);
 	sndbuf[0] = (unsigned char)userlen;
 	int i=0;
 	for (i=1; i<=userlen; i++) {
 		sndbuf[i]=argv[3][i-1];
 	}
-	printBuf("send username", 1, sndbuf,userlen);
 	sendMessage(s,sndbuf,userlen);
 
-	printf("Joining the chat channel...\n");
+	// ==== Set time =====
+	ftime(timeout);
 
-	// start loops
+	printf("Joining the chat channel as [%s]...\n\n",argv[3]);
+
+	// fork for timeout tracking
+	pid_t pid = fork();
+	if (pid < 0) { exit(1); }
+	if (pid ==0) {
+		while(1) {
+			ftime(&current);
+			if ((current.time-timeout->time) >= TIMEOUT) {
+				printf("  Idling...\n");
+				sndbuf[0]=0x00;
+				sndbuf[1]=0;
+				sendMessage(s,sndbuf,1);
+				ftime(timeout);
+			}
+		}
+	} else {
+
+		// start loop
+		while (1) {
+
+			FD_CLR(s, &readfds);
+	    FD_SET(s, &readfds);
+	    FD_SET(STDIN, &readfds);
+	    select(fdmax+1, &readfds, NULL, NULL, NULL);
 
 
-	// parent process for writing
-	while (1) {
 
-		FD_CLR(s, &readfds);
-    FD_SET(s, &readfds);
-    FD_SET(STDIN, &readfds);
-    select(fdmax+1, &readfds, NULL, NULL, NULL);
-
-		if (FD_ISSET(STDIN, &readfds)) {
-		// there's some keyboard input
-
+			if (FD_ISSET(STDIN, &readfds)) {
+				// there's some keyboard input
+				ftime(timeout);
 
 				unsigned char ubuf[BUFSIZE];		// buff for getting around char* in fgets
 
+				// fgets(buf,BUFSIZE-1,stdin);
 				fgets(buf,BUFSIZE-1,stdin);
 				strncpy((char*)ubuf, buf, 512);	// signed to unsigned char*
 
 				unsigned int len = strlen(buf)-1;
-				if(strncmp((char*)ubuf, "exit",4)==0 || e==-1) {
+				if(strncmp((char*)ubuf, "exit",4)==0) {
 					break;
 				}
 
-				prepareMessage(sndbuf, 0, ubuf, len);
+				if(strncmp((char*)ubuf, "\n",1)==0) {
+					continue;
+				}
+
+				// prepareMessage(sndbuf, 0, ubuf, len);
+				sndbuf[0]=(unsigned char)len;
+				appendFrag(sndbuf,1,len,ubuf);
 				sendMessage(s,sndbuf,len);
 
-		}
-		if (FD_ISSET(s, &readfds)) {
-			// otherwise we got something from server
-			if ((e=parseServerMessage(s,rcvbuf))==-1) {
-				break;
+			}
+			if (FD_ISSET(s, &readfds)) {
+				// otherwise we got something from server
+				if ((parseServerMessage(s,rcvbuf))==-1) {
+					break;
+				}
 			}
 
 		}
-
+		kill(pid, SIGTERM);
+		close(s);
+		close(STDIN);
 	}
-
-	close(s);
-	close(STDIN);
-
 }

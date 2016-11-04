@@ -18,11 +18,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+
 #include "chathandler.h"
 
 #define MY_PORT 21259    // port we're listening on
+#define TIMEOUT 30
 
-int broadcastStatus (unsigned char code, int i, unsigned char userlist[], unsigned char* sndbuf, fd_set master, int listener, int fdmax) {
+int broadcastStatus (unsigned char code, int i, int newfds, unsigned char userlist[], unsigned char* sndbuf, fd_set master, int listener, int fdmax) {
   int j;
   unsigned int len = (unsigned int)userlist[0];
   // initialize status code
@@ -33,12 +35,11 @@ int broadcastStatus (unsigned char code, int i, unsigned char userlist[], unsign
   for(j = 0; j <= fdmax; j++) {
       if (FD_ISSET(j, &master)) {
           // except the listener and ourselves
-          if (j != listener && j != i ) {
+          if (j != listener && j != i  && j != newfds) {
               sendMessage(j,sndbuf,len+1); // account for extra code byte
           }
       }
   } // END send to everyone
-
   return 0;
 
 }
@@ -66,7 +67,6 @@ int main(int argc, char *argv[])
     unsigned int n_users=0;
     unsigned char userlist[NUMUSERS][USERNAME_MAX];           //50 users, 20 in length
 
-    struct timeval seltimeout = {.tv_sec=0, .tv_usec=0};
     struct timeb timeouts[NUMUSERS];
     struct timeb current;
 
@@ -193,34 +193,8 @@ int main(int argc, char *argv[])
                             fdmax = newfd;
                         }
 
-                        // Print out current user list for funsies
-                        for(j = 0; j <= fdmax; j++) {
-                            if (FD_ISSET(j, &master)) {
-                                // except the listener
-                                if (j != listener ) {
-                                  if (userlist[j][0]!=0) {
-                                    printBuf("userlist +1",1,userlist[j],(unsigned int)userlist[j][0]);
-                                  }
-                                }
-                            }
-                        }
-
                         // ======== User Connected Broadcast ==========
-                        // initialize status code
-                        sndbuf[0]=0x01;
-
-                        appendFrag(sndbuf, 1, (unsigned int)userlist[newfd][0], userlist[newfd]);
-
-                        // send to everyone
-                        for(j = 0; j <= fdmax; j++) {
-                            if (FD_ISSET(j, &master)) {
-                                // except the listener and ourselves
-                                if (j != listener && j != i && j!=newfd ) {
-                                    sendMessage(j,sndbuf,len+1); // account for extra code byte
-                                    // printf("PRINT SNDBUF %c, %d, %s\n",(unsigned char)sndbuf[0], (unsigned int)sndbuf[1],sndbuf);
-                                }
-                            }
-                        } // END send to everyone
+                        broadcastStatus (0x01, i, newfd, userlist[newfd], sndbuf, master, listener, fdmax);
 
                         n_users++;
 
@@ -236,7 +210,7 @@ int main(int argc, char *argv[])
                         if (nbytes == 0) {
                             //====== User Disconnected  =======
                             printf("selectserver: socket %d hung up\n", i);
-                            broadcastStatus (0x02, i, userlist[i], sndbuf, master, listener, fdmax);
+                            broadcastStatus (0x02, i, i,userlist[i], sndbuf, master, listener, fdmax);
                             // remove user from list
                             userlist[i][0] = 0;
                         } else {
@@ -250,25 +224,26 @@ int main(int argc, char *argv[])
 
                         // check timeout
                         ftime(&current);
-                        if((current.time-timeouts[i].time) > 10) {
+                        if((current.time-timeouts[i].time) > TIMEOUT) {
                           // timeout threshold exceeded!
                           printf("selectserver: socket %d timed out\n", i);
-                          broadcastStatus (0x02, i, userlist[i], sndbuf, master, listener, fdmax);
+                          broadcastStatus (0x02, i, i, userlist[i], sndbuf, master, listener, fdmax);
                           //
                           // tell it to close itself
                           sndbuf[0] = (unsigned char) 0x11;
                           sendMessage(i,sndbuf,1); // account for extra code byte
                           printBuf("Send DC", 0, sndbuf, 1);
-                          // sleep(2); //wait
-                          // // // remove user from list
+
+                          // remove user from list
                           userlist[i][0] = 0;
                           FD_CLR(i, &master); // remove from master set
                           n_users--;
-                          //
+
                           continue;
                         } // otherwise it's alive still
 
                         ftime(&timeouts[i]);
+
 
                         // prep message
                         sndbuf[0] = 0x00;  // chat code
@@ -280,6 +255,7 @@ int main(int argc, char *argv[])
                         if (numchar==0) {
                           // it's a keepalive!
                           ftime(&timeouts[i]);
+                          printf("Keep alive!\n");
                         } else {
 
                           len = appendFrag(sndbuf,len+1, 1, buf);       // attach message length
@@ -287,29 +263,28 @@ int main(int argc, char *argv[])
                           len = appendFrag(sndbuf, len, numchar, buf);  // attach message
 
 
-                            // // print to the server for debugging (-1 because no len byte)
-                            // printBuf("rcv message", 0, buf,numchar);
 
-                            printf("SOME LEN %d\n",len);
 
-                            // printf("%c\n", sndbuf[9]);
+                          printf("SOME LEN %d\n",len);
 
-                            // prepareMessage(sndbuf,len,buf,numchar);
-                            printBuf("Send message", 0, sndbuf, len);
+                          // printf("%c\n", sndbuf[9]);
 
-                            // send to everyone
-                            for(j = 0; j <= fdmax; j++) {
-                                if (FD_ISSET(j, &master)) {
-                                    // except the listener and ourselves
-                                    if (j != listener && j != i ) {
+                          // prepareMessage(sndbuf,len,buf,numchar);
+                          printBuf("Send message", 0, sndbuf, len);
 
-                                        sendMessage(j, sndbuf, len);
+                          // send to everyone
+                          for(j = 0; j <= fdmax; j++) {
+                              if (FD_ISSET(j, &master)) {
+                                  // except the listener and ourselves
+                                  if (j != listener && j != i ) {
 
-                                    }
-                                }
-                            } // END send to everyone
-                          } // END >0 message
-                       }
+                                      sendMessage(j, sndbuf, len);
+
+                                  }
+                              }
+                          } // END send to everyone
+                        } // END >0 message
+                     }
                 } // END handle data from client
 
             } // END got new incoming connection
