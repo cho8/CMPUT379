@@ -22,25 +22,15 @@
 #include "chathandler.h"
 #include <signal.h>
 
-#define	 MY_PORT  21259
+#define STDIN 0
 
-void sigchld_handler(int sig)
-{
-    pid_t p;
-    int status;
 
-    while ((p=waitpid(-1, &status, WNOHANG)) != -1)
-    {
-       /* Handle the death of pid p */
-			 printf("Reading channel died\n");
-			 exit(0);
-    }
-}
-
-void parseServerMessage(int s, unsigned char* rcvbuf) {
+int parseServerMessage(int s, unsigned char* rcvbuf) {
 	int len=0;
 	unsigned int nbytes;						//bytes read
 	unsigned char username[20];
+
+	int exitcode=0;
 	nbytes = receiveMessage(s,rcvbuf,1);	// get the code
 
 	printf("%x ", rcvbuf[0]);
@@ -79,19 +69,16 @@ void parseServerMessage(int s, unsigned char* rcvbuf) {
 			break;
 		case 0x11 : // okbai
 			printf("\n=== Timed out\n");
-			receiveMessage(s,rcvbuf,1);
-			len=(unsigned int)rcvbuf[0];
-			receiveMessage(s,rcvbuf,len);
-			raise(SIGTERM);
-			// exit(0);
-
+			exitcode=-1;
+			break;
 	}
 
-
+	return exitcode;
  }
 
 int main(int argc, char *argv[]) {
 	int	s;											//sock
+	int e;											//exit
 	int fdmax;									//max file descriptors
 	unsigned int n_users; 			//number of users
 	unsigned int nbytes;				//num bytes sent/received
@@ -106,16 +93,10 @@ int main(int argc, char *argv[]) {
 	struct	hostent		*host;
 
 	fd_set clientfds;
+	fd_set readfds;
 
 	host = gethostbyname ("localhost");
   // connect to something outside of localhost
-
-	// handle child signal
-	struct sigaction sa;
-
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = sigchld_handler;
-	sigaction(SIGCHLD, &sa, NULL);
 
 
 	if (argc != 4) {
@@ -135,8 +116,6 @@ int main(int argc, char *argv[]) {
 		exit (1);
 	}
 
-	// bzero (&server, sizeof (server)); // set everything to zero byte-to-byte
-	// bcopy (host->h_addr, & (server.sin_addr), host->h_length); // copy stuff form server
 
 	server.sin_addr.s_addr = inet_addr(argv[1]);
 	server.sin_family = host->h_addrtype;
@@ -148,8 +127,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	FD_ZERO(&clientfds);
+	FD_ZERO(&readfds);
 	FD_SET(s, &clientfds);
-	FD_SET(STDIN, &clientfds); //stdin
+	// FD_SET(STDIN, &clientfds); //stdin
 	fdmax = s;
 
 	select(fdmax + 1, &clientfds, NULL, NULL, 0);
@@ -198,40 +178,44 @@ int main(int argc, char *argv[]) {
 
 	// start loops
 
-	pid_t pid = fork();
-	if (pid < 0) exit(1);
-	if (pid==0) {
-			// printf ("Forking for read channel...\n");
-			// child process for reading
-			while (1) {
 
-				parseServerMessage(s,rcvbuf);
-			}
-			close(s);
+	// parent process for writing
+	while (1) {
 
-	} else {
+		FD_CLR(s, &readfds);
+    FD_SET(s, &readfds);
+    FD_SET(STDIN, &readfds);
+    select(fdmax+1, &readfds, NULL, NULL, NULL);
 
-		// parent process for writing
-		while (1) {
+		if (FD_ISSET(STDIN, &readfds)) {
+		// there's some keyboard input
 
-			unsigned char ubuf[BUFSIZE];
 
-			fgets(buf,BUFSIZE-1,stdin);
-			strncpy((char*)ubuf, buf, 512);	// signed to unsigned char*
+				unsigned char ubuf[BUFSIZE];		// buff for getting around char* in fgets
 
-			unsigned int len = strlen(buf)-1;
-			if(strncmp((char*)ubuf, "exit",4)==0) {
+				fgets(buf,BUFSIZE-1,stdin);
+				strncpy((char*)ubuf, buf, 512);	// signed to unsigned char*
+
+				unsigned int len = strlen(buf)-1;
+				if(strncmp((char*)ubuf, "exit",4)==0 || e==-1) {
+					break;
+				}
+
+				prepareMessage(sndbuf, 0, ubuf, len);
+				sendMessage(s,sndbuf,len);
+
+		}
+		if (FD_ISSET(s, &readfds)) {
+			// otherwise we got something from server
+			if ((e=parseServerMessage(s,rcvbuf))==-1) {
 				break;
 			}
 
-			prepareMessage(sndbuf, 0, ubuf, len);
-			sendMessage(s,sndbuf,len);
-
 		}
-		// close the child reading process
-		kill(pid, SIGTERM);
-		close (s);
+
 	}
 
+	close(s);
+	close(STDIN);
 
 }

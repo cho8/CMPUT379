@@ -106,8 +106,6 @@ int main(int argc, char *argv[])
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
 
-
-    // TODO fork for reading??
     // main loop
     while(1) {
 
@@ -257,14 +255,13 @@ int main(int argc, char *argv[])
                           printf("selectserver: socket %d timed out\n", i);
                           broadcastStatus (0x02, i, userlist[i], sndbuf, master, listener, fdmax);
                           //
-                          // tell it it's disconnected
+                          // tell it to close itself
                           sndbuf[0] = (unsigned char) 0x11;
                           sendMessage(i,sndbuf,1); // account for extra code byte
-                          printBuf("Send DC", 0, sndbuf, 8);
-                          //
-                          // // remove user from list
+                          printBuf("Send DC", 0, sndbuf, 1);
+                          // sleep(2); //wait
+                          // // // remove user from list
                           userlist[i][0] = 0;
-                          close(i); // bye!
                           FD_CLR(i, &master); // remove from master set
                           n_users--;
                           //
