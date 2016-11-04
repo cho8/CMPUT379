@@ -256,19 +256,18 @@ int main(int argc, char *argv[])
                           // timeout threshold exceeded!
                           printf("selectserver: socket %d timed out\n", i);
                           broadcastStatus (0x02, i, userlist[i], sndbuf, master, listener, fdmax);
-
+                          //
                           // tell it it's disconnected
                           sndbuf[0] = (unsigned char) 0x11;
-                          appendFrag(sndbuf, 1, (unsigned int)userlist[i][0], userlist[i]);
-                          sendMessage(i,sndbuf,(unsigned int)userlist[0]+1); // account for extra code byte
-                          printBuf("Send message", 0, sndbuf, 8);
-
-                          // remove user from list
+                          sendMessage(i,sndbuf,1); // account for extra code byte
+                          printBuf("Send DC", 0, sndbuf, 8);
+                          //
+                          // // remove user from list
                           userlist[i][0] = 0;
                           close(i); // bye!
                           FD_CLR(i, &master); // remove from master set
                           n_users--;
-
+                          //
                           continue;
                         } // otherwise it's alive still
 

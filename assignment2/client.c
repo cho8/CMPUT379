@@ -32,6 +32,7 @@ void sigchld_handler(int sig)
     while ((p=waitpid(-1, &status, WNOHANG)) != -1)
     {
        /* Handle the death of pid p */
+			 printf("Reading channel died\n");
 			 exit(0);
     }
 }
@@ -81,7 +82,8 @@ void parseServerMessage(int s, unsigned char* rcvbuf) {
 			receiveMessage(s,rcvbuf,1);
 			len=(unsigned int)rcvbuf[0];
 			receiveMessage(s,rcvbuf,len);
-			exit(0);
+			raise(SIGTERM);
+			// exit(0);
 
 	}
 
@@ -147,10 +149,10 @@ int main(int argc, char *argv[]) {
 
 	FD_ZERO(&clientfds);
 	FD_SET(s, &clientfds);
-	FD_SET(0, &clientfds); //stdin
+	FD_SET(STDIN, &clientfds); //stdin
 	fdmax = s;
 
-	select(fdmax + 1, &clientfds, NULL, NULL, NULL);
+	select(fdmax + 1, &clientfds, NULL, NULL, 0);
 
 	// Client expects server socket to be ready for read past select
 	if (! FD_ISSET(s, &clientfds)) {
