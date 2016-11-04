@@ -30,11 +30,11 @@ fd_set master;    // master file descriptor list
 
 FILE *fp=NULL;
 struct sigaction sigint_act, oldint_act;
-struct sigaction sigkill_act, oldkill_act;
+struct sigaction sigterm_act, oldkill_act;
 
 void sigterm_handler(int signo){
 	printf("SIGTERM received. Server closing\n");
-  sigaction(SIGTERM, &sigkill_act, &oldkill_act);
+  sigaction(SIGTERM, &sigterm_act, &oldkill_act);
 
   // close the sockets
   int j;
@@ -151,11 +151,11 @@ int main(int argc, char *argv[])
     }
 
     //Setting up signal handler for killing daemon
-    sigkill_act.sa_handler = sigterm_handler;
-    sigemptyset(&sigkill_act.sa_mask);
-    sigkill_act.sa_flags = 0;
+    sigterm_act.sa_handler = sigterm_handler;
+    sigemptyset(&sigterm_act.sa_mask);
+    sigterm_act.sa_flags = 0;
 
-    sigaction(SIGTERM, &sigkill_act, &oldkill_act);
+    sigaction(SIGTERM, &sigterm_act, &oldkill_act);
 
 
     // get us a socket and bind it

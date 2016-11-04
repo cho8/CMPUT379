@@ -76,6 +76,8 @@ int main(int argc, char *argv[]) {
 	unsigned int n_users; 			//number of users
 	unsigned int nbytes;				//num bytes sent/received
 
+	int i;
+	
 	int BUFSIZE = 512;
 	char buf[BUFSIZE];												// buffer for getting input
 	unsigned char sndbuf[BUFSIZE];
@@ -152,7 +154,7 @@ int main(int argc, char *argv[]) {
 
 	printf("=== %d users connected.\n", n_users);
 	if (n_users>0) {
-		for (int i=0; i<n_users; i++) {
+		for (i=0; i<n_users; i++) {
 			if (receiveMessage(s, rcvbuf, 1) ==-1) {
 				perror(" get username len");
 			}
@@ -167,7 +169,7 @@ int main(int argc, char *argv[]) {
 	// ==== Send user name =====
 	unsigned int userlen = strlen(argv[3]);
 	sndbuf[0] = (unsigned char)userlen;
-	int i=0;
+
 	for (i=1; i<=userlen; i++) {
 		sndbuf[i]=argv[3][i-1];
 	}
