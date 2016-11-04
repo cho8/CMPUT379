@@ -33,7 +33,7 @@ struct sigaction sigint_act, oldint_act;
 struct sigaction sigterm_act, oldkill_act;
 
 void sigterm_handler(int signo){
-	printf("SIGTERM received. Server closing\n");
+  fprintf(fp, "SIGTERM received. Server closing\n");
   sigaction(SIGTERM, &sigterm_act, &oldkill_act);
 
   // close the sockets
@@ -41,18 +41,15 @@ void sigterm_handler(int signo){
   for(j = 0; j <= fdmax; j++) {
       if (FD_ISSET(j, &master)) {
           // except the listener
-          if (j != listener ) {
-            // prepare the username and send it off
-            close(j);
-            FD_CLR(j, &master); // remove from master set
-
-          }
+          // prepare the username and send it off
+          close(j);
+          FD_CLR(j, &master); // remove from master set
       }
   } // END send to everyone
+  fprintf(fp, "Close successful.\n");
   printf("Connections closed.\n");
-
-	fclose(fp);
-	exit(0);
+  fclose(fp);
+  exit(0);
 }
 
 
@@ -182,6 +179,9 @@ int main(int argc, char *argv[])
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
 
+    fprintf(fp, "Server established with pid %d.\n",pid);
+    fprintf(fp,	"Listening for connections.\n"\
+		"Use 'kill %d' to end server connections.\n", pid);
     // main loop
     while(1) {
 
@@ -211,10 +211,10 @@ int main(int argc, char *argv[])
 
                         // ===== Send handshake ====
 
-	                      if(send(newfd, handbuf, sizeof(handbuf), 0) == -1) {
+	                if(send(newfd, handbuf, sizeof(handbuf), 0) == -1) {
                             fprintf(fp, "[Error] Handshake send : %s\n",strerror(errno));
-		                    }
-
+		        }
+			fprintf(fp,"Sending handsake to %d\n",newfd);
                         // ==== Send number of users ====
 
                         buf[0] = (unsigned char)n_users;
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
                           for(j = 0; j <= fdmax; j++) {
                               if (FD_ISSET(j, &master)) {
                                   // except the listener and ourselves
-                                  if (j != listener && j != i ) {
+                                  if (j != listener ) {
 
                                       if (sendMessage(j, sndbuf, len)== -1) {
                                         fprintf(fp, "[Error] Forward chat : %s\n",strerror(errno));
