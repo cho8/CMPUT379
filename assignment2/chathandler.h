@@ -1,6 +1,8 @@
 #ifndef DIST_H
 #define DIST_H
 
+#define TIMEOUT 30
+
 /*
 	Prepares the message by attaching length byte numchar to the front of the message
 	at an offset index offs.
@@ -30,45 +32,35 @@ int appendFrag(unsigned char* sndbuf, int offs, unsigned int len, unsigned char*
 
 
 /*
-	Wrapper for receiving nbytes from socket
+	Wrapper for receiving nbytes from socket.
+	Returns -1 if error;
+	Otherwise returns 0.
 */
-unsigned int receiveMessage(int socket, unsigned char* rcvbuf, unsigned int numchar) {
+int receiveMessage(int socket, unsigned char* rcvbuf, unsigned int numchar) {
 	unsigned int nbytes = 0;
 	while (nbytes<numchar) {
-		nbytes+=recv(socket, rcvbuf+nbytes, sizeof(unsigned char)*numchar, 0);
+		if ((nbytes+=recv(socket, rcvbuf+nbytes, sizeof(unsigned char), 0)) == -1) {
+			return -1;
+		}
 	}
 	rcvbuf[nbytes]='\0';
-	return nbytes;
+	return 0;
 }
 
 /*
 	Wrapper for sending nbytes (plus length byte) to socket
+	Returns -1 if error;
+	Otherwise returns 0.
 */
-unsigned int sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
+int sendMessage(int socket, unsigned char* sndbuf, unsigned int numchar) {
 	unsigned int nbytes = 0;
-	while(nbytes<numchar) {
-		nbytes += send(socket, sndbuf+nbytes, sizeof(unsigned char)*(numchar+1), 0); //+1 to account for length byte
+	while(nbytes<numchar+1) {
+		if ((nbytes += send(socket, sndbuf+nbytes, sizeof(unsigned char), 0)) ==-1) { //+1 to account for length byte
+			return -1;
+		}
 	}
-	return nbytes;
+	return 0;
 }
-
-
-/* Print chat */
-void printChat(unsigned char* username, unsigned int userlen, unsigned char* buf, unsigned int numchar) {
-	int i;
-	for(i=0; i<userlen; i++){
-		// printf("%d ",i);
-		printf("%c", (unsigned char) username[i]);
-		i++;
-	} printf("\n");
-	printf(" : ");
-	for(i=0; i<numchar; ) {
-		// printf("%d ",i);
-		printf("%c", (unsigned char) buf[i]);
-		i++;
-	} printf("\n");
-}
-
 
 /*
 	Print n bytes (plus length byte) of content in a buffer.
