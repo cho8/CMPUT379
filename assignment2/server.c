@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
                         }
 
                         userlist[newfd][0]=(unsigned char)len;
-                        for (int j=1; j<=len; j++) {
+                        for (j=1; j<=len; j++) {
                           userlist[newfd][j]=buf[j-1];
                         }
 
