@@ -16,9 +16,8 @@ void prepareMessage(unsigned char* sndbuf, int offs, unsigned char* message, uns
  }
 
 /*
-	Server method.
-	Helper method to append message fragmentto message package at an offs index.
-	Frag info consists of len byte in first index and username string
+	Helper method to append message fragment to message package at an offs index.
+	Frag info can consist of len byte in first index and username string
 	returns total length of message
 */
 int appendFrag(unsigned char* sndbuf, int offs, unsigned int len, unsigned char* username) {
@@ -26,12 +25,6 @@ int appendFrag(unsigned char* sndbuf, int offs, unsigned int len, unsigned char*
 	for (i=0; i<=len; i++) {
 		sndbuf[i+offs]=username[i];
 	}
-	// printf("USER APPEND ");
-	// printf("%x",sndbuf[0]);
-	// printf("%d",(unsigned int)sndbuf[1]);
-	// for (i=2; i<numchar+2; i++){
-	// 	printf("%c", sndbuf[i]);
-	// } printf("\n");
 	return(len+offs);
 }
 

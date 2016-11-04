@@ -2,9 +2,9 @@
   TODO:
     X from commandline: chat379 <hostname> <portnumber> <username>
     X handshake (connection -> receives hex -> responds username)
-    - chat UI (chat, user status)
+    X chat UI (chat, user status)
     X chat message -- commandline input, then to server
-    - keepalive
+    X keepalive
 */
 
 
@@ -26,6 +26,8 @@
 #define STDIN 0
 #define TIMEOUT 10
 
+struct timeb current;
+struct timeb timeout;
 
 int parseServerMessage(int s, unsigned char* rcvbuf) {
 	int len=0;
@@ -71,8 +73,29 @@ int parseServerMessage(int s, unsigned char* rcvbuf) {
 			printf("\n=== Timed out\n");
 			exitcode=-1;
 			break;
-	}
+		case 0x22 :
+			ftime(&timeout);
+			break;
 
+		case 0x55 : // userlist incoming
+
+			receiveMessage(s, rcvbuf, 1);
+			unsigned int n_users=(unsigned int)rcvbuf[0];
+
+			printf("=== %d users connected.\n", n_users);
+			if (n_users>0) {
+				for (int i=0; i<n_users; i++) {
+					receiveMessage(s, rcvbuf, 1);
+					unsigned int len = (unsigned int)rcvbuf[0];
+					printf(" uln len: %d\n", len);
+					receiveMessage(s, rcvbuf, len);
+					printf("-- %s\n", rcvbuf);
+				}
+			}
+			printf("ok\n");
+			break;
+	}
+	printf("done\n");
 	return exitcode;
  }
 
@@ -82,13 +105,6 @@ int main(int argc, char *argv[]) {
 	unsigned int n_users; 			//number of users
 	unsigned int nbytes;				//num bytes sent/received
 
-	struct timeb current;
-	int ShmID = shmget(IPC_PRIVATE, sizeof(struct timeb), IPC_CREAT | 0666);
-	if (ShmID < 0) {
-  	printf("*** shmget error (server) ***\n");
-    exit(1);
-  }
-	struct timeb * timeout = (struct timeb *) shmat(ShmID, NULL, 0);
  	printf("Server has attached the shared memory...\n");
 
 	int BUFSIZE = 512;
@@ -181,7 +197,7 @@ int main(int argc, char *argv[]) {
 	sendMessage(s,sndbuf,userlen);
 
 	// ==== Set time =====
-	ftime(timeout);
+	ftime(&timeout);
 
 	printf("Joining the chat channel as [%s]...\n\n",argv[3]);
 
@@ -191,12 +207,12 @@ int main(int argc, char *argv[]) {
 	if (pid ==0) {
 		while(1) {
 			ftime(&current);
-			if ((current.time-timeout->time) >= TIMEOUT) {
-				printf("  Idling...\n");
+			if ((current.time-timeout.time) >= TIMEOUT) {
+				// printf("  Idling...\n");
 				sndbuf[0]=0x00;
 				sndbuf[1]=0;
 				sendMessage(s,sndbuf,1);
-				ftime(timeout);
+				ftime(&timeout);
 			}
 		}
 	} else {
@@ -213,7 +229,6 @@ int main(int argc, char *argv[]) {
 
 			if (FD_ISSET(STDIN, &readfds)) {
 				// there's some keyboard input
-				ftime(timeout);
 
 				unsigned char ubuf[BUFSIZE];		// buff for getting around char* in fgets
 
@@ -222,11 +237,17 @@ int main(int argc, char *argv[]) {
 				strncpy((char*)ubuf, buf, 512);	// signed to unsigned char*
 
 				unsigned int len = strlen(buf)-1;
-				if(strncmp((char*)ubuf, "exit",4)==0) {
+				if(strncmp((char*)ubuf, "!exit",5)==0) {
 					break;
 				}
 
-				if(strncmp((char*)ubuf, "\n",1)==0) {
+				if(strncmp((char*)ubuf, "!list",5)==0) {		// wants to know userlist
+					sndbuf[0]=0x44;
+					sendMessage(s,sndbuf,1);
+					continue;
+				}
+
+				if(strncmp((char*)ubuf, "\n",1)==0) {	// eat up return presses
 					continue;
 				}
 

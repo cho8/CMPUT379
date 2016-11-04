@@ -3,8 +3,8 @@
     X from commandline: server379 portnumber
     - make daemon
     X handshake (receive connection -> send hex -> receive username)
-    - handle multiple client inputs
-    - chat UI (broadcast chat, update user status, communication errors)
+    X handle multiple client inputs
+    X chat UI (broadcast chat, update user status, communication errors)
     - logfile server379procid.log
 */
 
@@ -243,6 +243,45 @@ int main(int argc, char *argv[])
                         } // otherwise it's alive still
 
                         ftime(&timeouts[i]);
+                        sndbuf[0]=0x22;
+                        sendMessage(i,sndbuf,1);
+
+                        // ==== request for userlist
+                        if (buf[0]==0x44) {
+                          sndbuf[0]=0x55;
+                          sndbuf[1] = (unsigned char)n_users;
+                          if(send(i, sndbuf, sizeof(unsigned char)*2, 0) == -1) {
+                              perror("n_users send");
+                          }
+                          // ==== send list of users ====
+                          if (n_users >0 ) {
+                            // printf("Sending userlist\n");
+                            unsigned int userlen;
+                            // loop through all fds associated with usernames
+                            for(j = 0; j <= fdmax; j++) {
+                              if (FD_ISSET(j, &master)) {
+                                // except the listener
+                                if (j != listener ) {
+                                  // prepare the username and send it off
+                                  userlen=(unsigned int)userlist[j][0];
+                                  printf(" uln len: %d\n", userlen);
+                                  if (userlen>0) {
+                                    sndbuf[0]=userlist[j][0];
+                                    sendMessage(i,sndbuf,1);
+                                    for (i=0; i<=userlen; i++) {
+                                      sndbuf[i]=userlist[j][i+1];
+                                    }
+                                    printBuf("send username",0,sndbuf,userlen+1);
+                                    sendMessage(i, sndbuf, userlen-1);
+                                    printf("ok\n");
+                                    }
+                                   } // END prepare usernames
+                                } // END FD_IISET
+                             } // END loop through fds
+                          } // More than one user
+                          printf("done!\n");
+                           continue;
+                        }
 
 
                         // prep message
@@ -255,7 +294,6 @@ int main(int argc, char *argv[])
                         if (numchar==0) {
                           // it's a keepalive!
                           ftime(&timeouts[i]);
-                          printf("Keep alive!\n");
                         } else {
 
                           len = appendFrag(sndbuf,len+1, 1, buf);       // attach message length
