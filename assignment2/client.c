@@ -85,7 +85,6 @@ int main(int argc, char *argv[]) {
 
 	struct timeval	tv = {TIMEOUT,0};
 	struct	sockaddr_in	server;
-	struct	hostent		*host;
 
 	fd_set clientfds;
 	fd_set readfds;
@@ -96,11 +95,6 @@ int main(int argc, char *argv[]) {
 		exit (0);
 	}
 
-	if (host == NULL) {
-		perror ("Client: cannot get host description");
-		exit (1);
-	}
-
 	s = socket (AF_INET, SOCK_STREAM, 0);
 
 	if (s < 0) {
@@ -108,10 +102,9 @@ int main(int argc, char *argv[]) {
 		exit (1);
 	}
 
-
 	server.sin_addr.s_addr = inet_addr(argv[1]);
-	server.sin_family = host->h_addrtype;
-	server.sin_port = htons (atoi(argv[2]));
+	server.sin_family = AF_INET;
+	server.sin_port = htons(atoi(argv[2]));
 
 	if (connect (s, (struct sockaddr*) & server, sizeof (server))) {
 		perror ("Client: cannot connect to server");
@@ -124,6 +117,7 @@ int main(int argc, char *argv[]) {
 	// FD_SET(STDIN, &clientfds); //stdin
 	fdmax = s;
 
+	// wait for server
 	select(fdmax + 1, &clientfds, NULL, NULL, 0);
 
 	// Client expects server socket to be ready for read past select
