@@ -177,6 +177,8 @@ int main(int argc, char *argv[]) {
     FD_SET(s, &readfds);
     FD_SET(STDIN, &readfds);
 
+		tv.tv_sec=TIMEOUT-5;
+		tv.tv_usec=0;
 		n = select(fdmax+1, &readfds, NULL, NULL, &tv);
 
 		// peek to see if socket still open
@@ -197,7 +199,6 @@ int main(int argc, char *argv[]) {
 			if (sendMessage(s,sndbuf,1)==-1) {
 				perror("send keepalive");
 			}
-			struct timeval tv={.tv_sec=TIMEOUT,.tv_usec=0};
 			continue;
 		}
 
