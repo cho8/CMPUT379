@@ -90,9 +90,6 @@ int main(int argc, char *argv[]) {
 	fd_set clientfds;
 	fd_set readfds;
 
-	host = gethostbyname ("localhost");
-  // connect to something outside of localhost
-
 
 	if (argc != 4) {
 		printf("Usage: %s <hostname> <portnumber> <username>\n", argv[0]);

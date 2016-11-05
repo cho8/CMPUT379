@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
     // get us a socket and bind it
     memset(&sa, 0, sizeof sa);
     sa.sin_family = AF_INET;
-    sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+    sa.sin_addr.s_addr = INADDR_ANY;
     sa.sin_port = htons(atoi(argv[1]));
 
     if (bind(listener, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
