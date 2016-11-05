@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 	unsigned int nbytes;				//num bytes sent/received
 
 	int i;
-	
+
 	int BUFSIZE = 512;
 	char buf[BUFSIZE];												// buffer for getting input
 	unsigned char sndbuf[BUFSIZE];
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 	}
 	n_users=(unsigned int)rcvbuf[0];
 
-	printf("=== %d users connected.\n", n_users);
+	printf("=== %d other users connected.\n", n_users);
 	if (n_users>0) {
 		for (i=0; i<n_users; i++) {
 			if (receiveMessage(s, rcvbuf, 1) ==-1) {

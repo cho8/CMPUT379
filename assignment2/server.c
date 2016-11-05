@@ -213,8 +213,8 @@ int main(int argc, char *argv[])
 
 	                if(send(newfd, handbuf, sizeof(handbuf), 0) == -1) {
                             fprintf(fp, "[Error] Handshake send : %s\n",strerror(errno));
-		        }
-			fprintf(fp,"Sending handsake to %d\n",newfd);
+		               }
+			                  fprintf(fp,"Sending handsake to %d\n",newfd);
                         // ==== Send number of users ====
 
                         buf[0] = (unsigned char)n_users;
@@ -254,10 +254,26 @@ int main(int argc, char *argv[])
                         }
 
                         unsigned int len = (unsigned int)buf[0];
+                        unsigned char username[USERNAME_MAX];
 
+                        username[0]=buf[0];
                         if (receiveMessage(newfd, buf, len)==-1) {
                           fprintf(fp, "[Error] Receive new user : %s\n",strerror(errno));
                         }
+                        appendFrag(username,1,len,buf);
+
+                        int unique=1;
+                        // check for uniqueness
+                        for(j = 0; j <= fdmax; j++) {
+                          if(strncmp((char*)username, (char*)userlist[j],len+1)==0) {
+                            printf("Non unique id\n");
+                            close(newfd);
+                            FD_CLR(newfd, &master); // remove from master set
+                            unique=0;
+                            break;
+                           }
+                        }
+                        if (unique==0) break;
 
                         userlist[newfd][0]=(unsigned char)len;
                         for (j=1; j<=len; j++) {

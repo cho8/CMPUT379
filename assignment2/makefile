@@ -1,4 +1,6 @@
-client : server
+all : client server
+	
+client : 
 	gcc client.c -o chat379
 
 server :
