@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "simulator.h"
 
 /*
@@ -18,11 +22,15 @@ int pages_in_use = 0;		// number of pages that are flagged
 int window_index = 0; // windex :) the last winsize number of memory references
 int mem_refs = 0; 	// total number of memory refernces!
 
-int* workingset_history;	// history of page referenced at a given window interval
-int* pages;					// arrays of pages
+int workingset_history[128];	// history of page referenced at a given window interval
+int pages[128];					// arrays of pages
 
-int* data_space[1024];	// TODO Change this magic number later?
+int data_space[1024];	// TODO Change this magic number later?
 												// max address is 33,554,431
+
+// prototypes
+void checkWindowInterval();
+void markAccessedPage(int address);
 
 int main(int argc, char* argv[]) {
 
@@ -34,11 +42,12 @@ int main(int argc, char* argv[]) {
 	if (argc != 3) {
 		printf("Usage : %s <pagesize> <windowsize>\n", argv[0]);
 	}
-	psize = atoi(argv[1]);
-	winsize = atoi(argv[2]);
+	page_size = atoi(argv[1]);
+	window_size = atoi(argv[2]);
 	//
 	// // start process
-	// process();
+	printf("Page size %d, Win size %d, Process start...\n", page_size, window_size);
+	process();
 	//
 	//
 	// return(0);
@@ -73,7 +82,7 @@ void put (unsigned int address, int value) {
 	checkWindowInterval();
 
 	// put the value in the address
-	data_space[address]
+	data_space[address] = value;
 
 	// flag the page in use
 	markAccessedPage(address);
@@ -91,7 +100,7 @@ int get (unsigned int address) {
 	checkWindowInterval();
 
 	// get the value in the address
-	d = data_space[address]
+	int d = data_space[address];
 
 	// flag the page in use
 	markAccessedPage(address);
@@ -116,17 +125,17 @@ void done () {
 	printf("Working set history:\n");
 	printf("Interval   Pages\n");
 	int i;
-	for (i=0; i < window_interval_count; i++ {
+	for (i=0; i < window_interval_count; i++) {
 		printf("%7d %8d\n", i, workingset_history[i]);
 		sum += workingset_history[i];
 	}
-	printf('\n');
+	printf("\n");
 
 	// average working set size
 	// make the average a decimal
 	double average = (double)sum/mem_refs;
-	printf("Average working set size over execution time:\n");
-	printf("%.2f", average)
+	printf("Average working set size over execution time: ");
+	printf("%.2f\n", average);
 
 
 }
@@ -135,24 +144,32 @@ void checkWindowInterval() {
 	// "execution" moves forward
 	window_index++;
 	mem_refs++;
+	printf("Mem refs: %d, Windex: %d \n", mem_refs, window_index);
+
 
 	// if "traversed" window_size memory references (i.e. at an interval)
-	if (mem_refs-1 % window_size == 0) {
+	if (window_index > window_size) {
+		// printf("Window shift\n");
 
 		// add page count to history at this interval
-		workingset_history[window_interval_count] = page_count;
-		// window shifts over, next interval
+		workingset_history[window_interval_count] = pages_in_use;
+		// new window interval, new working set sta
 		window_interval_count++;
 		// the next window-size pages
 		window_index = 0;
-		page_count = 0;
+		pages_in_use = 0;
+		int i;
+		for (i=0; i<sizeof(pages); i++) {
+			printf("%d",pages[i]);
+			pages[i]=0;
+		}
 	}
 
 }
 
 void markAccessedPage(int address) {
-	if (pages[address / PAGE_SIZE] == 0) {
-		page_count++;
-		pages[address / PAGE_SIZE] =1;
+	if (pages[address / page_size] == 0) {
+		pages_in_use++;
+		pages[address / page_size] =1;
 	}
 }
