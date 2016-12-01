@@ -13,6 +13,8 @@
 */
 
 // Global variables
+int HASHKEY_DATA = 1024;
+
 int page_size = 0;
 int window_size = 0;
 
@@ -25,12 +27,50 @@ int mem_refs = 0; 	// total number of memory refernces!
 int workingset_history[128];	// history of page referenced at a given window interval
 int pages[128];					// arrays of pages
 
-int data_space[1024];	// TODO Change this magic number later?
-												// max address is 33,554,431
+// Constants
+int HASHKEY = 1024;
+int MAX_ADDRESS = 33554431;
+
+typedef struct Node_t {
+	int address;
+	int value;
+	struct Node_t* next;
+} Node_t;
+
+Node_t datahash[1024];
+
+void process () {
+	int N, i, j, l, t, min, f, k;
+
+	printf("number of keys: ");
+	scanf("%d", &N);
+	printf("Sorting %1d keys\n", N);
+
+	// ignore the simulator init, already done with bash
+	// init (128, 1000);
+
+	/* Generate the sorting problem (just random numbers) */
+
+	for (i=0; i < N; i++) put (i, lrand48 ());
+
+	/* Sort the numbers */
+
+	for (i = 0; i < N-1; i++) {
+		for (j = i+1, f = min = get (i), k = i; j < N; j++)
+			if ((t = get (j)) < min) {
+				k = j;
+				min = t;
+			}
+			put (i, min);
+			put (k, f);
+		}
+		done ();
+}
 
 // prototypes
 void checkWindowInterval();
 void markAccessedPage(int address);
+int hashFunction(int address);
 
 int main(int argc, char* argv[]) {
 
@@ -61,13 +101,9 @@ int main(int argc, char* argv[]) {
 */
 void init (int psize, int winsize) {
 	// ignore psize and winsize
-	// assert(psize > 0);
-	// assert(winsize > 0);
-	//
+
 	// page_size = psize;
 	// window_size = winsize;
-
-
 
 	return;
 }
@@ -78,11 +114,11 @@ void init (int psize, int winsize) {
 */
 void put (unsigned int address, int value) {
 
-	// working set history stuff
+	// check where we are in the working set window
 	checkWindowInterval();
 
 	// put the value in the address
-	data_space[address] = value;
+	// data_space[address] = value;
 
 	// flag the page in use
 	markAccessedPage(address);
@@ -96,16 +132,17 @@ void put (unsigned int address, int value) {
 */
 int get (unsigned int address) {
 
+	int d;
 	// working set history stuff
 	checkWindowInterval();
 
 	// get the value in the address
-	int d = data_space[address];
+	// int d = data_space[address];
 
 	// flag the page in use
 	markAccessedPage(address);
 
-	// if null, handled on the process' end
+	// if NULL, handled on the process' end
 	return d;
 }
 
@@ -173,3 +210,83 @@ void markAccessedPage(int address) {
 		pages[address / page_size] =1;
 	}
 }
+
+int hashFunction(int address) {
+	int key = address % HASHKEY_DATA;
+	return key;
+}
+
+Node_t* allocateNode(int key, int value) {
+	Node_t *new_node = (Node_t*)malloc(sizeof(Node_t));
+  new_node->value = value;
+  new_node->next = NULL;
+	return new_node;
+}
+
+void putValue(int address, int value) {
+
+	Node_t* curr;	// pointer for traversal
+
+	// access the hash table (get the list head)
+	int address_key = hashFunction(address);
+	Node_t* node = &datahash[address_key];
+
+	// if the beginning node is not initialized, put value there
+	if (node->next == NULL) {
+		Node_t* nextnode = allocateNode(address, value);
+		node->next = nextnode;
+		return;
+	}
+
+	// Go to the beginning of the list
+	node = node->next;
+	// traverse the nodes
+	while (node->address != address) {
+		// if at end of linked list, add a new node with our value
+		if (node->next == NULL) {
+			Node_t* nextnode = allocateNode(address, value);
+			node->next = nextnode;
+			return;
+		}
+		// more entries in linked list, continue traversing
+		node = node->next;
+	}
+
+	// found node with same address
+	if (node->address == address) {	// double check
+		node->value = value;
+	} else {
+		printf("Traverse error!\n");
+	}
+}
+
+// int getValue(int address, int value) {
+// 	Node_t node;
+// 	int result;
+//
+// 	// access the hash table
+// 	int addresskey = hashFunction(address);
+// 	node = hash[key];
+// 	// if that hash entry is not initialized, return
+// 	// don't worry about NULL values
+// 	if (node->value == NULL ) {
+// 		return node->value;
+// 	}
+//
+// 	// traverse the nodes
+// 	while (node->address != address) {
+// 		// if at end of linked list, return NULL
+// 		if (node->next == NULL) {
+// 			return NULL;
+// 		}
+// 		node = node->next;
+// 	}
+//
+// 	// found node with same address
+// 	if (node->address == address) {
+// 		return node->value;
+// 	} else {
+// 		printf("Traverse error!\n");
+// 		return NULL;
+// 	}
+// }
