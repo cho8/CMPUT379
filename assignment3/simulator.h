@@ -1,6 +1,13 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
+// defs
+typedef struct Node_t {
+	int address;
+	int value;
+	struct Node_t* next;
+} Node_t;
+
 // Simulator function interfaces
 void process();
 void init (int psize, int winsize);
@@ -17,12 +24,7 @@ void putValue(int address, int value);
 int getValue(int address);
 void printBitArray(unsigned long x);
 
-// defs
-typedef struct Node_t {
-	int address;
-	int value;
-	struct Node_t* next;
-} Node_t;
+
 
 
 #endif
