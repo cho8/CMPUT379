@@ -5,6 +5,11 @@
 #include "simulator.h"
 
 
+// Constants
+const int HASHKEY = 1024;
+const int MAX_ADDRESS = 33554431;  // max address is 2^25-1
+
+// globals
 int page_size = 0;
 int window_size = 0;
 
@@ -20,26 +25,8 @@ int n_pages = 0;					// Number of pages in memory
 int workingset_history[256];		// working set size history, default size 256
 unsigned long pages;								// bit array of pages
 
-// Constants
-int HASHKEY = 1024;
-int MAX_ADDRESS = 33554431;
-
-typedef struct Node_t {
-	int address;
-	int value;
-	struct Node_t* next;
-} Node_t;
-
 Node_t* datahash;
 
-// prototypes
-void checkWindowInterval();
-void markAccessedPage(int address);
-int hashFunction(int address);
-Node_t* allocateNode(int address, int value);
-void putValue(int address, int value);
-int getValue(int address);
-void printBitArray(unsigned long x);
 
 
 int main(int argc, char* argv[]) {
@@ -68,7 +55,7 @@ void init (int psize, int winsize) {
 	// ignore psize and winsize
 
 	// initialize page mapping
-	n_pages = MAX_ADDRESS / page_size;
+	n_pages = MAX_ADDRESS+1 / page_size;
 	pages = 0x00;
 
 	// initialize memory hash
