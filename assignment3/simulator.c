@@ -8,6 +8,7 @@
 // Constants
 const int HASHKEY = 1024;
 const int MAX_ADDRESS = 33554431;  // max address is 2^25-1
+const int HISTORY_SIZE = 256;
 
 // globals
 int page_size = 0;
@@ -22,7 +23,8 @@ int workingset_sum;							// sum of working set size over all mem_refs
 
 int history_size = 0;						// Size of history
 int n_pages = 0;								// Number of pages in memory
-int workingset_history[256];		// working set size history, default size 256
+int *workingset_history;		// working set size history, default size 256
+int workingset_extension = 1;			// dynamically lengthen the history if needed
 unsigned long pages;						// bit array of pages
 
 Node_t* datahash;								// hash table representing address space
@@ -60,6 +62,9 @@ void init (int psize, int winsize) {
 
 	// initialize memory hash
 	datahash = (Node_t*) malloc(HASHKEY*(sizeof(Node_t)));
+
+	// initialize working set history record
+	workingset_history = (int*) malloc(workingset_extension * HISTORY_SIZE* (sizeof(int)));
 
 	return;
 }
@@ -144,7 +149,11 @@ void checkWindowInterval() {
 
 	// if "traversed" window_size memory references (i.e. at an interval)
 	if (window_index > window_size) {
-		// printf("Window shift\n");
+		if (window_interval_count >= workingset_extension*HISTORY_SIZE) {
+			// we need more room to store history
+			workingset_extension++;
+			workingset_history = (int*) realloc (workingset_history, workingset_extension*HISTORY_SIZE*sizeof(int));
+		}
 
 		// add page count to history at this interval
 		workingset_history[window_interval_count] = pages_in_use;
