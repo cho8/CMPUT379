@@ -14,7 +14,7 @@ void process () {
 	printf("Sorting %1d keys\n", N);
 
 	// ignore the simulator init, already done with bash
-	// init (128, 1000);
+	init (128, 1000);
 
 	/* Generate the sorting problem (just random numbers) */
 
