@@ -13,19 +13,19 @@ const int MAX_ADDRESS = 33554431;  // max address is 2^25-1
 int page_size = 0;
 int window_size = 0;
 
-int window_interval_count = 0; // number of window intervals occurred
-int pages_in_use = 0;		// number of pages that are flagged
+int window_interval_count = 0;	// number of window intervals occurred
+int pages_in_use = 0;						// number of pages that are flagged
 
-int window_index = 0; // windex :) the last winsize number of memory references
-int mem_refs = 0; 	// total number of memory references
-int workingset_sum;	// sum of working set size over all mem_refs
+int window_index = 0; 					// windex :) the last winsize number of memory references
+int mem_refs = 0; 							// total number of memory references
+int workingset_sum;							// sum of working set size over all mem_refs
 
-int history_size = 0;			// Size of history
-int n_pages = 0;					// Number of pages in memory
+int history_size = 0;						// Size of history
+int n_pages = 0;								// Number of pages in memory
 int workingset_history[256];		// working set size history, default size 256
-unsigned long pages;								// bit array of pages
+unsigned long pages;						// bit array of pages
 
-Node_t* datahash;
+Node_t* datahash;								// hash table representing address space
 
 
 
@@ -261,7 +261,7 @@ int getValue(int address) {
 
 	// if that hash entry is not initialized, nothing is there
 	// return null or garbage
-	if (head == NULL ) {
+	if (head->next ==  NULL ) {
 		printf("Segmentation fault\n");
 		return head->value;
 	}
