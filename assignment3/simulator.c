@@ -120,7 +120,7 @@ void done () {
 
 
 	// history of working set size
-	printf("Working set history:\n");
+	printf("\nWorking set history:\n");
 	printf("Interval   Pages\n");
 	int i;
 	for (i=0; i < window_interval_count; i++) {
@@ -130,7 +130,7 @@ void done () {
 	// average working set size
 	// make the average a decimal
 	double average = (double)workingset_sum/mem_refs;
-	printf("Average working set size over execution time: ");
+	printf("\nAverage working set size over execution time: ");
 	printf("%.6f\n", average);
 
 
@@ -185,7 +185,7 @@ void markAccessedPage(int address) {
 
 	// Print out the bit array for visual representation
 	// printBitArray(page_bit);
-	// printBitArray(pages);
+	 printBitArray(pages);
 
 }
 
@@ -308,6 +308,6 @@ void printBitArray(unsigned long x) {
       bit = ((x >> i) & 1);
 			printf("%d",bit);
   }
-	printf("\n");
+	printf("\r");
 
 }
