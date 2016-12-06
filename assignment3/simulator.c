@@ -25,7 +25,8 @@ int history_size = 0;						// Size of history
 int n_pages = 0;								// Number of pages in memory
 int *workingset_history;		// working set size history, default size 256
 int workingset_extension = 1;			// dynamically lengthen the history if needed
-unsigned long pages;						// bit array of pages
+unsigned long* pages;						// array of bitarray of pages
+int n_pagearrs;									// number of page arrays
 
 Node_t* datahash;								// hash table representing address space
 
@@ -58,7 +59,8 @@ void init (int psize, int winsize) {
 
 	// initialize page mapping
 	n_pages = MAX_ADDRESS+1 / page_size;
-	pages = 0x00;
+	n_pagearrs = n_pages / 32;				// 32 bitarays
+	pages = (unsigned long*) calloc (n_pagearrs, sizeof(long)); // array of bit arrays
 
 	// initialize memory hash
 	datahash = (Node_t*) malloc(HASHKEY*(sizeof(Node_t)));
@@ -118,20 +120,24 @@ int get (unsigned int address) {
  */
 void done () {
 
-
+	int interval_sum = 0;
 	// history of working set size
 	printf("\nWorking set history:\n");
 	printf("Interval   Pages\n");
 	int i;
 	for (i=0; i < window_interval_count; i++) {
 		printf("%7d %8d\n", i, workingset_history[i]);
+		interval_sum+=workingset_history[i];
 	}
 
 	// average working set size
+	printf("%d %d\n", workingset_sum, mem_refs);
 	// make the average a decimal
 	double average = (double)workingset_sum/mem_refs;
 	printf("\nAverage working set size over execution time: ");
 	printf("%.6f\n", average);
+	printf("Average working set size over intervals: ");
+	printf("%.6f\n", (double) interval_sum/window_interval_count);
 
 
 }
@@ -165,7 +171,8 @@ void checkWindowInterval() {
 		pages_in_use = 0;
 
 		// clear the pages referenced array
-		pages = 0x0;
+		memset(pages, 0, sizeof(*pages));
+
 	}
 
 }
@@ -175,17 +182,16 @@ void checkWindowInterval() {
  */
 void markAccessedPage(int address) {
 	int page_no = address / page_size;
-	unsigned long page_bit = (1<<page_no);
+	int pageArrIndex = page_no/n_pages;
 
 	// if page hasn't been visited, flag it and incr page_count;
-	if ((pages & (1 << (page_no))) == 0) {
+	if ((pages[pageArrIndex] & (1 << (page_no))) == 0) {
 		pages_in_use++;
-		pages = pages | (1 << (page_no));
+		pages[pageArrIndex] = pages[pageArrIndex] | (1 << (page_no));
 	}
 
 	// Print out the bit array for visual representation
-	// printBitArray(page_bit);
-	 printBitArray(pages);
+	//  printBitArray(pages[pageArrIndex]);
 
 }
 
