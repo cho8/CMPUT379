@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
  * ! Assignment clarification: ignore psize and winsize for favor of sim bash script
 */
 void init (int psize, int winsize) {
-	// ignore psize and winsize
+	// ignore psize and winsize params
 
 	// initialize page mapping
 	n_pages = MAX_ADDRESS+1 / page_size;
@@ -130,8 +130,9 @@ void done () {
 		interval_sum+=workingset_history[i];
 	}
 
+	// printf("%d %d\n", workingset_sum, mem_refs);
+
 	// average working set size
-	printf("%d %d\n", workingset_sum, mem_refs);
 	// make the average a decimal
 	double average = (double)workingset_sum/mem_refs;
 	printf("\nAverage working set size over execution time: ");

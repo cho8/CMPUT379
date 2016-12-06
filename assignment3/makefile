@@ -4,7 +4,7 @@ quicksort : clean simulator
 
 heapsort : clean simulator
 	gcc -c heapsort.c
-	gcc simulator.o quicksort.o -o simulation
+	gcc simulator.o heapsort.o -o simulation
 
 example : clean simulator
 	gcc -c example.c

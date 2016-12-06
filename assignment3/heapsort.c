@@ -1,80 +1,72 @@
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
 
-void swap(int * a, int * b){
-    /* Swaps the values of two int pointers
-    */
-    int temp = *a;
-    *a = *b;
-    *b = temp;       
+#include "simulator.h"
+
+
+ /*
+ Heapsort implementation from:
+ https://rosettacode.org/wiki/Sorting_algorithms/Heapsort
+ Modified to use simulator put/get methods instead of int* pointers
+ */
+int max (int n, int i, int j, int k) {
+    int m = i;
+    if ((j < n) && (get(j) > get(m))) {
+        m = j;
+    }
+    if ((k < n) && (get(k) > get(m))) {
+        m = k;
+    }
+    return m;
 }
 
-
-int LeftChild(int node){
-    return (2*node + 1);
-    }
-    
-int RightChild(int node){
-    return(2*node +2);
-    }
-    
-int Parent(int node){
-    return int(floor((node-1)/2));
-    }
-
-
-
-
-void siftDown(int * A, int start, int end){
-    int root = start;
-    int child, swap;
-    
-    while(LeftChild(root) <= end){      // while root has atleast one child
-        child = LeftChild(root);
-        swap = root;                    // Swap keeps track of child to swap with
-        
-        if(A[swap] < A[child]){
-            swap = child;
-            }
-        
-        if((child+1)<= end && A[swap] < A[child+1]){    //If there is a bigger right child
-            swap = child + 1;
-            }
-        if (swap == root){      //Root holds largest element. Assuming subheaps rooted at children
-            return;             //are valid, we are done.
-            }
-        else{
-            swap(A[root], A[swap]);
-            root = swap;
-            }
+void downheap (int n, int i) {
+    while (1) {
+        int j = max(n, i, 2 * i + 1, 2 * i + 2);
+        if (j == i) {
+            break;
         }
+        int t = get(i);
+        put(i, get(j));
+        put(j,t);
+        i = j;
     }
-    
-    
+}
 
-void heapify(int * A, length){
-    /* Used the wikipedia page on heapsort for reference.
-    We are implementing a heap structure in the input array.
-    */
-    
-    int start = Parent(length);    // start <- Parent node of node (length-1)
-    
-    while(start >= 0){
-        siftDown(A, start, length-1);
-        start--;
-        }
+void _heapsort (int n) {
+    int i;
+    for (i = (n - 2) / 2; i >= 0; i--) {
+        downheap(n, i);
     }
-
-
-
-
-void heapsort(int * A, int length){
-    heapify(A, length);
-    int end = length - 1;
-    
-    while(end > 0){
-        swap(A[end], A[0]);
-        end--;
-        siftDown(A, 0, end);
-        }
+    for (i = 0; i < n; i++) {
+        int t = get(n - i - 1);
+        put(n - i - 1, get(0));
+        put(0, t);
+        downheap(n - i - 1, 0);
     }
+}
+
+void process () {
+    int i;
+    int N;
+
+  	printf("number of keys: ");
+  	scanf("%d", &N);
+  	printf("Sorting %1d keys\n", N);
+
+    /*Init function params don't matter, but need to call init */
+    init(0,0);
+
+
+
+  	/* Generate the sorting problem (just random numbers) */
+
+  	for (i=0; i < N; i++) put (i, lrand48 ());
+
+  	/* Sort the numbers */
+
+    _heapsort(N);
+
+    done();
+
+}
