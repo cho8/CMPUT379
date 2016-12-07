@@ -4,7 +4,8 @@ Included is a simulator that studies the working set sizes of programs running i
 
 To run a simulation:
 
-sh sim <pagesize> <windowsize> <sort-alogrithm>
+chmod u+x sim
+./sim <pagesize> <windowsize> <sort-alogrithm>
 
 where <pagesize> is the page size, <windowsize> is the window size of the working set, and <sort-algorithm> is the name of the sorting algorithm (quicksort, heapsort, example).
 
