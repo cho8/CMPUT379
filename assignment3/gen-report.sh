@@ -1,7 +1,9 @@
 #!/bin/bash
 process=$1
 numints=$2
+
 reportname="average_$process-$numints.csv"
+
 
 psizes=(64 128 256 512)
 wsizes=(128 256 512 1024 2048 4096 8192 16384)
