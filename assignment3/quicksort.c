@@ -9,10 +9,32 @@ https://www.programmingalgorithms.com/algorithm/quick-sort-iterative?lang=C
 and modified to reference virtual memory space in simulator
 */
 
+int Partition(int left, int right) {
+	int piv = get(right);
+	int i = (left - 1);
+  int temp = 0;
+
+	for (int j = left; j <= right - 1; ++j) {
+		if (get(j) <= piv) {
+			++i;
+      //swap
+      temp = get(i);
+    	put(i, get(j));
+    	put(j, temp);
+		}
+	}
+
+  // swap
+  temp = get(i+1);
+  put(i+1, get(right));
+  put(right, temp);
+	return (i + 1);
+}
+
 void process () {
 
 
-  int i,j,x, temp, p;
+  int i,j,temp;
   int N;
 
   printf("number of keys: ");
@@ -36,41 +58,18 @@ void process () {
 	stack[++top] = startIndex;
 	stack[++top] = endIndex;
 
-	while (top >= 0)
-	{
+	while (top >= 0) {
 		endIndex = stack[top--];
 		startIndex = stack[top--];
 
-    x = get(endIndex);
-  	i = (startIndex - 1);
-    temp = 0;
+		int p = Partition(startIndex, endIndex);
 
-  	for (j = startIndex; j <= endIndex - 1; ++j)
-  	{
-  		if (get(j) <= x)
-  		{
-  			++i;
-        //swap
-        temp = get(i);
-      	put(i, get(j));
-      	put(j, temp);
-  		}
-  	}
-
-    //swap
-    temp = get(i+1);
-    put(i+1, get(endIndex));
-    put(endIndex, temp);
-  	p=(i + 1);
-
-		if (p - 1 > startIndex)
-		{
+		if (p - 1 > startIndex) {
 			stack[++top] = startIndex;
 			stack[++top] = p - 1;
 		}
 
-		if (p + 1 < endIndex)
-		{
+		if (p + 1 < endIndex)  {
 			stack[++top] = p + 1;
 			stack[++top] = endIndex;
 		}
