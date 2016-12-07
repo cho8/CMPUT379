@@ -1,7 +1,11 @@
+pagesize=$1
+winsize=$2
+process=$3
+
 if [ "$#" -ne 3 ]; then
     echo "Usage: sim <pagesize> <winsize> <process name>"
 fi
 
-make $3
+make $process
 
-./simulation $1 $2
+./simulation $pagesize $winsize

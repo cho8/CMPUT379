@@ -1,96 +1,81 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
-void swap(int * a, int * b){
-    /* Swaps the values of two int pointers
-    */
-    int temp = *a;
-    *a = *b;
-    *b = temp;       
+#include "simulator.h"
+/*
+Quicksort referenced from:
+https://www.programmingalgorithms.com/algorithm/quick-sort-iterative?lang=C
+and modified to reference virtual memory space in simulator
+*/
+
+void process () {
+
+
+  int i,j,x, temp, p;
+  int N;
+
+  printf("number of keys: ");
+  scanf("%d", &N);
+  printf("Sorting %1d keys\n", N);
+
+  /*Init function params don't matter, but need to call init */
+  init(0,0);
+
+  /* Generate the sorting problem (just random numbers) */
+
+  for (i=0; i < N; i++) put (i, lrand48 ());
+
+  /* Sort the numbers */
+
+	int* stack = (int*)malloc(sizeof(int) * N);
+  int startIndex = 0;
+	int endIndex = N - 1;
+	int top = -1;
+
+	stack[++top] = startIndex;
+	stack[++top] = endIndex;
+
+	while (top >= 0)
+	{
+		endIndex = stack[top--];
+		startIndex = stack[top--];
+
+    x = get(endIndex);
+  	i = (startIndex - 1);
+    temp = 0;
+
+  	for (j = startIndex; j <= endIndex - 1; ++j)
+  	{
+  		if (get(j) <= x)
+  		{
+  			++i;
+        //swap
+        temp = get(i);
+      	put(i, get(j));
+      	put(j, temp);
+  		}
+  	}
+
+    //swap
+    temp = get(i+1);
+    put(i+1, get(endIndex));
+    put(endIndex, temp);
+  	p=(i + 1);
+
+		if (p - 1 > startIndex)
+		{
+			stack[++top] = startIndex;
+			stack[++top] = p - 1;
+		}
+
+		if (p + 1 < endIndex)
+		{
+			stack[++top] = p + 1;
+			stack[++top] = endIndex;
+		}
+	}
+
+	free(stack);
+  done();
 }
-
-
-//      BEGIN MEDIAN OF MEDIANS
-int getMedian(int *A, int size, int k) {
-    /* Selects the kth element in an array A
-    with 'size' number of elements. Will be used
-    to return the median of A.
-    */
-    if (size == 1 && k == 0) return A[0];
-
-    int m = int (size + 4)/5;              // m = number of bins of 5 element subarrays
-    int *medians = new int[m];
-    for (int i=0; i<m; i++) {
-        if (5*i + 4 < size) {
-            int *w = A + 5*i;
-            for (int j0=0; j0<3; j0++) {
-                int jmin = j0;
-                for (int j=j0+1; j<5; j++) {
-                    if (w[j] < w[jmin]) jmin = j;
-                }
-                swap(w[j0], w[jmin]);
-            }
-            medians[i] = w[2];
-        } else {
-            medians[i] = A[5*i];
-        }
-    }
-
-    int pivot = getMedian(medians, m, m/2);
-    delete [] medians;
-
-    for (int i=0; i<size; i++) {
-        if (A[i] == pivot) {
-            swap(A[i], A[size-1]);
-            break;
-        }
-    }
-
-    int store = 0;
-    for (int i=0; i<size-1; i++) {
-        if (A[i] < pivot) {
-            swap(A[i], A[store++]);
-        }
-    }
-    swap(A[store], A[size-1]);
-
-    if (store == k) {
-        return pivot;
-    } else if (store > k) {
-        return getMedian(A, store, k);
-    } else {
-        return getMedian(v+store+1, size-store-1, k-store-1);
-    }
-}
-
-//      END MEDIAN-OF-MEDIANS
-
-
-
-int inPlacePartitioning(int* A, int begin, int end){
-    /* Takes an array, finds its median, and arranges
-     elements less than it to the first half of the
-     sequence, and elements larger than it to the
-     second half. Returns pivot index.
-    */
-    int pivot = int (floor((begin + end) / 2));    // Replace with getMedian
-    pivot = getMedian(A, end-begin+1, pivot);
-    pivot = A[pivot];
-    while(begin <= end){
-        if(A[begin] >= pivot && A[end] < pivot){
-            swap(A[begin], A[end]);
-        }
-        if(A[begin] < pivot) begin++;
-        if(A[end] >= pivot) end--;
-    }
-    return begin;
-}
-
-
-void quicksort(int * A, int begin, int end){ 
-    if (begin < end){
-        int pivot = inPlacePartitioning(A, begin, end);
-        quicksort(A, begin, pivot - 1);
-        return quicksort(A, pivot + 1, end);    // Tail call for second half to keep O(log n)
-        }       
-    }

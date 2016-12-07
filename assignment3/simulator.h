@@ -24,7 +24,4 @@ void putValue(int address, int value);
 int getValue(int address);
 void printBitArray(unsigned long x);
 
-
-
-
 #endif

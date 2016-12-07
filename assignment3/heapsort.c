@@ -4,11 +4,11 @@
 #include "simulator.h"
 
 
- /*
- Heapsort implementation from:
- https://rosettacode.org/wiki/Sorting_algorithms/Heapsort
- Modified to use simulator put/get methods instead of int* pointers
- */
+/*
+Heapsort implementation from:
+https://rosettacode.org/wiki/Sorting_algorithms/Heapsort
+Modified to use simulator put/get methods instead of int* pointers
+*/
 int max (int n, int i, int j, int k) {
     int m = i;
     if ((j < n) && (get(j) > get(m))) {

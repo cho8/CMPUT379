@@ -21,10 +21,9 @@ int window_index = 0; 					// windex :) the last winsize number of memory refere
 int mem_refs = 0; 							// total number of memory references
 int workingset_sum;							// sum of working set size over all mem_refs
 
-int history_size = 0;						// Size of history
 int n_pages = 0;								// Number of pages in memory
-int *workingset_history;		// working set size history, default size 256
-int workingset_extension = 1;			// dynamically lengthen the history if needed
+int *workingset_history;				// working set size history, default size 256
+int workingset_extension = 1;		// dynamically lengthen the history if needed
 unsigned long* pages;						// array of bitarray of pages
 int n_pagearrs;									// number of page arrays
 
@@ -53,6 +52,7 @@ int main(int argc, char* argv[]) {
  * psize : page size
  * winsize : window size
  * ! Assignment clarification: ignore psize and winsize for favor of sim bash script
+ * process() will still need to call this.
 */
 void init (int psize, int winsize) {
 	// ignore psize and winsize params
@@ -130,17 +130,14 @@ void done () {
 		interval_sum+=workingset_history[i];
 	}
 
-	// printf("%d %d\n", workingset_sum, mem_refs);
-
-	// average working set size
+	// average working set size over all mem_refs
 	// make the average a decimal
 	double average = (double)workingset_sum/mem_refs;
 	printf("\nAverage working set size over execution: ");
 	printf("%.6f\n", average);
-	printf("Average working set size over intervals: ");
-	printf("%.6f\n", (double) interval_sum/window_interval_count);
 
-
+	free(workingset_history);
+	free(pages);
 }
 
 /*
@@ -171,7 +168,7 @@ void checkWindowInterval() {
 		window_index = 0;
 		pages_in_use = 0;
 
-		// clear the pages referenced array
+		// clear the pages-referenced array
 		memset(pages, 0, sizeof(*pages));
 
 	}

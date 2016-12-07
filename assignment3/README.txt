@@ -4,9 +4,11 @@ Included is a simulator that studies the working set sizes of programs running i
 
 To run a simulation:
 
-sh sim <pagesize> <windowsize> <sort-alogrithm>
+sh sim <pagesize> <windowsize> <sort-algorithm>
 
-where <pagesize> is the page size, <windowsize> is the window size of the working set, and <sort-algorithm> is the name of the sorting algorithm (quicksort, heapsort, example).
+where <pagesize> is the page size, <windowsize> is the window size of the working set, and <sort-algorithm> is the name of the sorting algorithm (example, quicksort, heapsort).
+
+The simulator will output the working set size history and calculate the average working set requirements over all memory references.
 
 Please note:
 If you are using another sorting algorithm you MUST call the simulator's init() function within process(), otherwise the working set history is not initialized.
