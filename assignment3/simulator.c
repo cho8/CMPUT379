@@ -135,7 +135,7 @@ void done () {
 	// average working set size
 	// make the average a decimal
 	double average = (double)workingset_sum/mem_refs;
-	printf("\nAverage working set size over execution time: ");
+	printf("\nAverage working set size over execution: ");
 	printf("%.6f\n", average);
 	printf("Average working set size over intervals: ");
 	printf("%.6f\n", (double) interval_sum/window_interval_count);
