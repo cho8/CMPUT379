@@ -1,7 +1,7 @@
 #!/bin/bash
 program=$1
 numints=$2
-reportname="average_$program.csv"
+reportname="average_$program_$numints.csv"
 
 psizes=(64 128 256 512)
 wsizes=(128 256 512 1024 2048 4096 8192 16384)
