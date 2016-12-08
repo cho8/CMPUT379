@@ -1,3 +1,6 @@
+none :
+	@echo "Usage: make [clean | <process>]"
+
 quicksort : clean simulator
 	gcc -c quicksort.c
 	gcc simulator.o quicksort.o -o simulation
