@@ -13,8 +13,8 @@ int Partition(int left, int right) {
 	int piv = get(right);
 	int i = (left - 1);
   int temp = 0;
-
-	for (int j = left; j <= right - 1; ++j) {
+  int j;
+	for (j = left; j <= right - 1; ++j) {
 		if (get(j) <= piv) {
 			++i;
       //swap

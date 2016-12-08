@@ -306,9 +306,9 @@ int getValue(int address) {
  */
 void printBitArray(unsigned long x) {
 	int bit = 0;
-
+  int i;
   // check bits of x for first 1
-  for (int i = 31; i >= 0; i--) {
+  for (i = 31; i >= 0; i--) {
       bit = ((x >> i) & 1);
 			printf("%d",bit);
   }
